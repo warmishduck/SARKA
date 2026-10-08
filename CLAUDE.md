@@ -189,8 +189,11 @@ Real examples to copy the style from: `src/route.js` and `src/content/exhibits.j
 - `main` is the live site shown to the museum (currently v1). A push to `main` builds the
   site and publishes it to GitHub Pages (`.github/workflows/deploy.yml`), so `main` changes
   only when the developer explicitly asks for it.
-- `v2` is this code. It has no public URL; it is tested on a phone through a tunnel
-  (see "Dev server").
+- `v2` is this code. `origin` (`pulse-duck-ar`) only stores the branch and has no site for it.
+  A public preview lives in a separate repository, `warmishduck/SARKA` (git remote `sarka`,
+  `https://warmishduck.github.io/SARKA/`); `git push sarka v2:main` publishes `v2` there.
+  That push goes to SARKA's own `main`, never to `origin`'s. Day-to-day testing on a phone
+  still goes through a tunnel (see "Dev server").
 - Commit on `v2`. Push only after the developer has tried the change on a phone and
   approved it.
 
