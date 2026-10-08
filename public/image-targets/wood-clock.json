@@ -1,0 +1,23 @@
+{
+  "imagePath": "image-targets/wood-clock_luminance.jpg",
+  "metadata": null,
+  "name": "wood-clock",
+  "type": "PLANAR",
+  "properties": {
+    "top": 793,
+    "left": 583,
+    "width": 760,
+    "height": 1013,
+    "isRotated": false,
+    "originalWidth": 1932,
+    "originalHeight": 2576
+  },
+  "resources": {
+    "originalImage": "wood-clock_original.jpg",
+    "croppedImage": "wood-clock_cropped.jpg",
+    "thumbnailImage": "wood-clock_thumbnail.jpg",
+    "luminanceImage": "wood-clock_luminance.jpg"
+  },
+  "created": 1791472092864,
+  "updated": 1791472092864
+}

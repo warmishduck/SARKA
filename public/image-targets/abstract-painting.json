@@ -1,0 +1,23 @@
+{
+  "imagePath": "image-targets/abstract-painting_luminance.jpg",
+  "metadata": null,
+  "name": "abstract-painting",
+  "type": "PLANAR",
+  "properties": {
+    "top": 753,
+    "left": 593,
+    "width": 862,
+    "height": 1149,
+    "isRotated": false,
+    "originalWidth": 1932,
+    "originalHeight": 2576
+  },
+  "resources": {
+    "originalImage": "abstract-painting_original.jpg",
+    "croppedImage": "abstract-painting_cropped.jpg",
+    "thumbnailImage": "abstract-painting_thumbnail.jpg",
+    "luminanceImage": "abstract-painting_luminance.jpg"
+  },
+  "created": 1791472090105,
+  "updated": 1791472090105
+}

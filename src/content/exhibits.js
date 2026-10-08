@@ -51,6 +51,10 @@ export const EXHIBITS = {
   '03': {creatures: [alone('glowcap')], game: 'light_the_way', imageTarget: '03'},
   // Office test: cats painting → acorn creature.
   'office-cats': {creatures: [alone('acorn')], imageTarget: 'cats-painting'},
+  // More office test objects: an abstract painting, a backlit sign and a wooden wall clock.
+  'office-painting': {creatures: [alone('pinecone')], imageTarget: 'abstract-painting'},
+  'office-sign': {creatures: [alone('glowcap')], imageTarget: 'modify-sign'},
+  'office-clock': {creatures: [alone('acorn')], imageTarget: 'wood-clock'},
   // The whole demo: all the creatures, and the game a button away.
   demo: {creatures: TOGETHER, game: 'light_the_way'},
   // The yard game, open whenever the museum is closed: no creatures, straight into the game.
