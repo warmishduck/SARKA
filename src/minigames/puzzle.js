@@ -12,7 +12,8 @@
 //   art         a URL to the 2D art to cut up, or omit it to use a generated placeholder
 //   label       shown on the placeholder art (and read by the hint); the creature's own name
 //   hue         placeholder art's colour, 0-360 (ignored once real art exists)
-//   creatureId  used as the localStorage key so progress on this creature survives a revisit
+//   creatureId  used (with the site's folder) as the localStorage key so progress on this
+//               creature survives a revisit
 import {MiniGame} from './base.js'
 import {TEXT} from '../i18n.js'
 import {makePlaceholderArt} from './placeholder-art.js'
@@ -25,7 +26,11 @@ const LONG_PRESS_MS = 1500
 const LONG_PRESS_MOVE_TOLERANCE = 12   // px of finger drift still counted as "holding still"
 const SOLVED_FLOURISH_MS = 500
 
-const saveKey = (creatureId) => `lumina-puzzle-save-${creatureId}`
+// localStorage is shared by every site on the same host (all of someone.github.io), so progress
+// is keyed by the site's folder too: a preview deployed next to the live site must not pick up
+// (or overwrite) the live site's half-finished puzzles.
+const sitePath = () => location.pathname.replace(/[^/]*$/, '')
+const saveKey = (creatureId) => `lumina-puzzle-save:${sitePath()}:${creatureId}`
 
 const loadSave = (creatureId) => {
   try {
@@ -102,6 +107,8 @@ export default class PuzzleGame extends MiniGame {
     this.longPressTimer = null
     this.nudgeTimer = null
     this.selectedId = null
+    this.activeDrags = 0
+    this.dragCleanups = []
 
     const layout = rowsOverride && colsOverride ? {rows: rowsOverride, cols: colsOverride} : null
     const {rows, cols, pieces} = createPuzzle(pieceCount, Math.random, layout)
@@ -176,6 +183,14 @@ export default class PuzzleGame extends MiniGame {
   buildShell() {
     const stage = make('div', 'puzzle-stage')
     this.stage = stage
+    // iOS can still pan or rubber-band the page under a finger even with touch-action:none, which
+    // looks like the whole window sliding away mid-drag; cancelling touchmove while a piece is
+    // held stops that. Only during a drag, so the tray can still be scrolled.
+    stage.addEventListener('touchmove', (event) => {
+      if (this.activeDrags > 0) {
+        event.preventDefault()
+      }
+    }, {passive: false})
 
     const board = make('div', 'puzzle-board')
     board.style.aspectRatio = `${this.cols} / ${this.rows}`
@@ -331,72 +346,84 @@ export default class PuzzleGame extends MiniGame {
 
   // Pointer handling for one piece: press to pick it up (however it's currently laid out —
   // tray flow or already on the board), drag to follow the finger, release to resolve a drop.
-  // setPointerCapture keeps the gesture even if the finger leaves the element, and
-  // touch-action:none (in CSS) keeps the page from scrolling or pull-to-refreshing underneath it.
+  // The move/up listeners sit on `window` for the length of the gesture rather than on the piece:
+  // they keep working whatever the finger is over, so a drag never depends on pointer capture
+  // surviving. (It used not to: re-inserting the piece into the stage after capturing the pointer
+  // released the capture, and the piece then stuck to where it was picked up.) touch-action:none
+  // (in CSS) and the touchmove guard in buildShell keep the page from scrolling underneath.
   bindDrag(el, pieceId) {
-    let dragging = false
-    let offsetX = 0
-    let offsetY = 0
+    let active = null   // {pointerId, offsetX, offsetY} while this piece is being dragged
 
-    const onDown = (event) => {
-      if (event.button !== undefined && event.button !== 0) {
+    const onMove = (event) => {
+      if (!active || event.pointerId !== active.pointerId) {
         return
       }
-      dragging = true
-      this.selectPiece(pieceId)
-      try {
-        el.setPointerCapture(event.pointerId)
-      } catch (e) {
-        // No active pointer with this id (a synthetic event in a test, or a browser quirk): the
-        // drag still works via ordinary bubbling as long as the pointer stays over the piece, it
-        // just won't follow the finger past the element's own edge.
+      const stageRect = this.stage.getBoundingClientRect()
+      el.style.left = `${event.clientX - stageRect.left - active.offsetX}px`
+      el.style.top = `${event.clientY - stageRect.top - active.offsetY}px`
+    }
+    const stopListening = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onUp)
+    }
+    const onUp = (event) => {
+      if (!active || event.pointerId !== active.pointerId) {
+        return
       }
+      const {pointerId} = active
+      active = null
+      this.activeDrags--
+      stopListening()
+      el.classList.remove('is-dragging', 'is-not-animated')
+      el.style.zIndex = ''
+      try {
+        el.releasePointerCapture(pointerId)
+      } catch (e) {
+        // Capture was never taken or is already gone — fine either way.
+      }
+      this.drop(pieceId, el)
+      this.registerActivity()
+    }
+    const onDown = (event) => {
+      if (active || (event.button !== undefined && event.button !== 0)) {
+        return
+      }
+      this.selectPiece(pieceId)
       el.classList.add('is-dragging', 'is-not-animated')
       const rect = el.getBoundingClientRect()
       const stageRect = this.stage.getBoundingClientRect()
       // Pick it up without a jump: keep the same offset between the finger and the piece's
       // top-left corner that it started at.
-      offsetX = event.clientX - rect.left
-      offsetY = event.clientY - rect.top
+      active = {pointerId: event.pointerId, offsetX: event.clientX - rect.left, offsetY: event.clientY - rect.top}
+      this.activeDrags++
       el.classList.add('is-placed')   // now positioned absolutely regardless of where it came from
       el.style.position = 'absolute'
       el.style.left = `${rect.left - stageRect.left}px`
       el.style.top = `${rect.top - stageRect.top}px`
       el.style.width = `${rect.width}px`
       el.style.height = `${rect.height}px`
-      this.stage.appendChild(el)
+      // Only a piece leaving the tray changes parent. Re-inserting one that is already in the
+      // stage would pull it out of the document for a moment, which ends a pointer capture.
+      if (el.parentNode !== this.stage) {
+        this.stage.appendChild(el)
+      }
       el.style.zIndex = '10'
-      this.registerActivity()
-    }
-    const onMove = (event) => {
-      if (!dragging) {
-        return
-      }
-      const stageRect = this.stage.getBoundingClientRect()
-      el.style.left = `${event.clientX - stageRect.left - offsetX}px`
-      el.style.top = `${event.clientY - stageRect.top - offsetY}px`
-    }
-    const onUp = (event) => {
-      if (!dragging) {
-        return
-      }
-      dragging = false
-      el.classList.remove('is-dragging', 'is-not-animated')
-      el.style.zIndex = ''
       try {
-        el.releasePointerCapture(event.pointerId)
+        el.setPointerCapture(event.pointerId)
       } catch (e) {
-        // Already released (e.g. pointercancel got there first) — fine either way.
+        // No active pointer with this id (a synthetic event in a test): the window listeners
+        // below still follow the drag.
       }
-      this.drop(pieceId, el)
+      window.addEventListener('pointermove', onMove)
+      window.addEventListener('pointerup', onUp)
+      window.addEventListener('pointercancel', onUp)
       this.registerActivity()
     }
 
     el.style.touchAction = 'none'
     el.addEventListener('pointerdown', onDown)
-    el.addEventListener('pointermove', onMove)
-    el.addEventListener('pointerup', onUp)
-    el.addEventListener('pointercancel', onUp)
+    this.dragCleanups.push(stopListening)
   }
 
   // Where a piece's centre now sits, as a fraction of the board's own width/height — the
@@ -602,6 +629,7 @@ export default class PuzzleGame extends MiniGame {
     clearTimeout(this.hintTimer)
     clearTimeout(this.longPressTimer)
     clearTimeout(this.nudgeTimer)
+    this.dragCleanups.forEach((stopListening) => stopListening())
     this.stage.remove()
   }
 }
