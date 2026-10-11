@@ -1,6 +1,9 @@
 import * as THREE from 'three'
 
-import {floorSpot, MAX_DISTANCE, MAX_HEIGHT_SHARE, MIN_DISTANCE, MIN_SCALE, WALL_GAP} from '../src/floor-spot.js'
+import {
+  FLAT_TOLERANCE, MAX_DISTANCE, MAX_EYE_HEIGHT, MAX_HEIGHT_SHARE, MIN_DISTANCE, MIN_EYE_HEIGHT, MIN_SCALE,
+  WALL_GAP, flatSurfaceHeight, floorSpot, median,
+} from '../src/floor-spot.js'
 
 let failures = 0
 const check = (name, ok, detail = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? '  — ' + detail : ''}`); if (!ok) failures++ }
@@ -63,6 +66,35 @@ check('an implausibly low object estimate is bounded by eye level',
   near(floorSpot(new THREE.Vector3(0, 0.05, 0.5), camera, looking(45), 1).scale, 2 * 0.5 * MAX_HEIGHT_SHARE))
 check('never shrinks below the minimum', floorSpot(painting, camera, looking(45), 100).scale === MIN_SCALE)
 check('no creatures (a game only): no shrinking', floorSpot(painting, camera, looking(45), 0).scale === 1)
+
+// A floor that is not at y = 0 is handled by the caller, which hands floorSpot everything measured
+// from it: the spot comes out the same, only lifted by the floor's height.
+const floorAt = 0.7
+const lifted = (v) => v.clone().setY(v.y - floorAt)
+const onRaisedFloor = floorSpot(lifted(painting), lifted(camera), looking(50), acornAlone)
+check('a floor measured above y = 0: the view meets it closer, measured from that floor',
+  onRaisedFloor && near(onRaisedFloor.position.y, 0) && near(onRaisedFloor.position.z, camera.z - hitDistance(2 - floorAt, 50)),
+  onRaisedFloor && `z=${onRaisedFloor.position.z.toFixed(3)}`)
+
+check('median: odd, even, unordered', median([3, 1, 2]) === 2 && median([4, 1, 2, 3]) === 2.5 && median([5]) === 5)
+
+const eye = 2   // the camera's height; a floor 2 below it is at y = 0
+check('hits that agree at the same height: that height',
+  near(flatSurfaceHeight([0.02, 0, -0.03], eye), 0, 0.02))
+check('one hit alone is not enough to call it flat', flatSurfaceHeight([0], eye) === null)
+check('no hits: null', flatSurfaceHeight([], eye) === null)
+check('the foot of a wall (the height climbs up the screen) is not a floor',
+  flatSurfaceHeight([0.3, 0.9, 1.5], eye) === null)
+check('a floor with one stray hit: the stray one is ignored',
+  near(flatSurfaceHeight([0.01, -0.02, 0.0, 1.4], eye), 0, 0.02))
+check('on a tie, the lower group wins (the floor, not a bench above it)',
+  near(flatSurfaceHeight([0.5, 0.52, 0, 0.03], eye), 0.015, 1e-6))
+check('hits right at the tolerance still agree', flatSurfaceHeight([0, FLAT_TOLERANCE], eye) !== null)
+check('a surface at the camera\'s own height is no floor', flatSurfaceHeight([1.9, 1.95], eye) === null,
+  `needs at least ${MIN_EYE_HEIGHT} below`)
+check('a surface far under the camera is no floor', flatSurfaceHeight([-2, -2.05], eye) === null,
+  `at most ${MAX_EYE_HEIGHT} below`)
+check('a floor above y = 0 is found where it is', near(flatSurfaceHeight([0.9, 0.92], eye), 0.91))
 
 console.log(failures === 0 ? '\nALL FLOOR SPOT CHECKS PASSED' : `\n${failures} CHECK(S) FAILED`)
 process.exit(failures ? 1 : 0)

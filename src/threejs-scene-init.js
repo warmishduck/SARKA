@@ -117,7 +117,10 @@ export const initScenePipelineModule = (exhibit, {anchor = null} = {}) => {
       stage.add(level.root)
     }
 
-    addShadowFloor(scene)
+    const shadowFloor = addShadowFloor(scene)
+    if (anchor) {
+      shadowFloor.position.y = anchor.position.y   // the scanner's floor is measured, not always y = 0
+    }
 
     if (!anchor) {
       placeCameraAtStart(camera)

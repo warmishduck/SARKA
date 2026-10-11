@@ -1,8 +1,9 @@
 // A small mossy stone wall with a glowing door outline on its front: where a creature hides until
 // its puzzle is solved, when the wall sinks into the floor and lets it out (see showcase.js's
 // lockStyle 'wall'). Built from rounded boxes, so it needs no model file. It stands
-// on y = 0, centred on x = 0, front face +z. Whatever goes below the world's floor (y = 0) is cut
-// away, which needs the renderer's localClippingEnabled (threejs-scene-init.js turns it on).
+// on y = 0, centred on x = 0, front face +z. Whatever goes below the floor it stands on (the
+// world height of its own origin, which is not always world y = 0) is cut away, which needs the
+// renderer's localClippingEnabled (threejs-scene-init.js turns it on).
 
 import * as THREE from 'three'
 import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js'
@@ -64,6 +65,17 @@ export const createStoneWall = ({width, height, depth}) => {
   const rowHeight = height / ROWS
   const aboveFloor = [new THREE.Plane(new THREE.Vector3(0, 1, 0), 0)]   // world space
   const clipped = (material) => Object.assign(material, {clippingPlanes: aboveFloor, clipShadows: true})
+  // The plane is in world space, but the wall is moved around: parked on the scanner's measured
+  // floor, inside a scaled stage. It is lined up with the wall's own base just before drawing.
+  const basePoint = new THREE.Vector3()
+  const standOnOwnFloor = () => {
+    root.getWorldPosition(basePoint)
+    aboveFloor[0].constant = -basePoint.y
+  }
+  const followFloor = (mesh) => {
+    mesh.onBeforeRender = standOnOwnFloor
+    mesh.onBeforeShadow = standOnOwnFloor
+  }
 
   // Stones in a running bond: every other row shifted by about half a stone.
   const stones = []
@@ -99,6 +111,7 @@ export const createStoneWall = ({width, height, depth}) => {
   })
   stoneMesh.castShadow = true
   stoneMesh.receiveShadow = true
+  followFloor(stoneMesh)
   body.add(stoneMesh)
 
   // Moss along the top: flattened green lumps.
@@ -116,6 +129,7 @@ export const createStoneWall = ({width, height, depth}) => {
     mossMesh.setColorAt(i, color.setHex(MOSS_COLORS[Math.floor(random() * MOSS_COLORS.length)]))
   }
   mossMesh.castShadow = true
+  followFloor(mossMesh)
   body.add(mossMesh)
 
   // The door: a glow on the front face, the way out once the puzzle is solved.
@@ -127,6 +141,7 @@ export const createStoneWall = ({width, height, depth}) => {
     }))
   )
   door.position.set(0, doorHeight / 2, depth * 0.6)
+  followFloor(door)
   body.add(door)
 
   return {

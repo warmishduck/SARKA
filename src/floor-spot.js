@@ -3,8 +3,10 @@
 // the view ray at a shallow tilt met the floor metres away, behind the wall) and never past the
 // object's wall. The object's own distance is only a guard: it is the least certain part of an
 // image target's pose and came out far too large on the phone. Pure (three.js maths only, no
-// DOM, no 8th Wall), so it can be tested in Node. The floor is the plane y = 0, as the 8th Wall
-// world tracking sets it up (see placeCameraAtStart in threejs-scene-init.js).
+// DOM, no 8th Wall), so it can be tested in Node. floorSpot works in a frame where the floor is
+// the plane y = 0, which is where the 8th Wall world tracking assumes it (see placeCameraAtStart
+// in threejs-scene-init.js) but not always where it really is: scan.js measures the floor with
+// surface hits (flatSurfaceHeight, median) and hands floorSpot positions relative to it.
 
 import * as THREE from 'three'
 
@@ -19,6 +21,51 @@ export const MAX_DISTANCE = 1.6
 export const MAX_HEIGHT_SHARE = 0.6
 /** Never shrink content below this. */
 export const MIN_SCALE = 0.25
+/** A measured floor lies at least this far and at most that far below the camera (scene units). */
+export const MIN_EYE_HEIGHT = 0.8
+export const MAX_EYE_HEIGHT = 3.5
+/** Surface hits count as one flat floor when they lie within this height of each other. */
+export const FLAT_TOLERANCE = 0.2
+
+/**
+ * @param {number[]} values
+ * @returns {number} The middle value (the mean of the two middle ones for an even count); NaN when empty.
+ */
+export const median = (values) => {
+  const sorted = [...values].sort((a, b) => a - b)
+  const mid = sorted.length >> 1
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2
+}
+
+/**
+ * The height of a flat surface, from surface hits taken at several points of one camera frame.
+ *
+ * Asking about different rows of the screen is what tells a floor from the foot of a wall: a
+ * floor has the same height wherever on the screen it is hit, a wall's height climbs up it. So
+ * the hits only count where at least two agree; the largest group that does wins (the lowest,
+ * on a tie), so one stray hit does not spoil a frame.
+ *
+ * @param {number[]} heights - World `y` of each hit.
+ * @param {number} cameraHeight - The camera's world `y`.
+ * @returns {number | null} The agreeing hits' median height; null when fewer than two agree or
+ *   the surface is not a plausible distance below the camera.
+ */
+export const flatSurfaceHeight = (heights, cameraHeight) => {
+  const sorted = [...heights].sort((a, b) => a - b)
+  let best = []
+  sorted.forEach((low, i) => {
+    const group = sorted.slice(i).filter((y) => y - low <= FLAT_TOLERANCE)
+    if (group.length > best.length) {
+      best = group
+    }
+  })
+  if (best.length < 2) {
+    return null
+  }
+  const height = median(best)
+  const below = cameraHeight - height
+  return below >= MIN_EYE_HEIGHT && below <= MAX_EYE_HEIGHT ? height : null
+}
 
 /**
  * @param {THREE.Vector3} objectPosition - The recognised object's estimated centre, world space.
