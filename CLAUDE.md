@@ -44,7 +44,7 @@ test/                     Node tests, run by `npm test`
 src/
   app.js                  Entry point: reads the URL, starts AR or welcome
   route.js                Pure routing logic (no DOM) — testable in Node
-  i18n.js                 All user-facing strings (fi, en, sv; Finnish by default); language switch state
+  i18n.js                 All user-facing strings (fi, en, sv, uk; Finnish by default); language switch state
   welcome.js              The welcome page (no camera, Three.js preview)
   scan.js                 Object scanner (/?scan): find object → glow → exhibit on the floor ahead
   floor-spot.js           Pure maths: where on the floor the scanner places content (tested)
@@ -350,8 +350,8 @@ image-target lookup). `puzzle-logic.test.js` and `platformer.test.js` cover game
 The `test` script in `package.json` lists the four files by name, so a new test file
 is not run until it is added there.
 
-When adding a new i18n key, the test will fail until all three languages have it.
-That is intentional — fix all three before committing.
+When adding a new i18n key, the test will fail until all four languages have it.
+That is intentional — fix all four before committing.
 
 ---
 

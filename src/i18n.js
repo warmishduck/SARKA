@@ -107,14 +107,48 @@ export const STRINGS = {
     scanHint: 'Rikta kameran mot ett museiföremål',
     scanFloor: 'Hittad! Rikta nu kameran mot golvet framför dig',
   },
+  uk: {
+    loading: (done, total) => `Завантажую істот… ${done}/${total}`,
+    loadingLevel: 'Завантажую рівень…',
+    hintCreatures: 'Торкнись істоти — вона зреагує',
+    hintWall: 'Хтось ховається за стіною — торкнись її',
+    hintLevel: 'Торкнись землі — Glowcap піде туди. Його світло будує міст',
+    modeToLevel: '🎮 Рівень',
+    modeToCreatures: '🌰 Істоти',
+    actionGrow: '🌿 Виростити гілку',
+    actionRemove: '🍂 Прибрати гілку',
+    won: 'Glowcap дійшов до виходу! ✨',
+    branchLost: 'Гілка зникла: жолудь відійшов надто далеко',
+    left: 'Вліво',
+    right: 'Вправо',
+    jump: 'Стрибок',
+    mute: 'Вимкнути звук',
+    unmute: 'Увімкнути звук',
+    photo: 'Зробити фото',
+    share: 'Поділитися',
+    close: 'Закрити',
+    saveHelp: 'Затисни фото, щоб зберегти його',
+    photoFailed: 'Не вдалося зробити фото',
+    rotateRight: 'Повернути вправо',
+    rotateLeft: 'Повернути вліво',
+    language: 'Мова',
+    title: 'Лісові істоти · AR',
+    welcomeTitle: 'Лісові істоти',
+    welcomeBody: 'Відскануй QR-код біля експоната, щоб зустріти його істоту',
+    welcomeUnknown: 'Цей код не розпізнано. Спробуй відсканувати його ще раз.',
+    scanObjects: 'Навести на предмет',
+    scanHint: 'Наведи камеру на предмет у залі',
+    scanFloor: 'Знайдено! Тепер наведи камеру на підлогу перед собою',
+  },
 }
 
-// The three museum languages, in the order the picker lists them. LANG_LABELS is the two-letter
-// badge on the corner button; LANG_NAMES is each language's own name, shown in the picker menu (so
-// a Finnish visitor sees "Suomi", not a foreign word for their language).
-export const LANGS = ['fi', 'en', 'sv']
-export const LANG_LABELS = {fi: 'FI', en: 'EN', sv: 'SV'}
-export const LANG_NAMES = {fi: 'Suomi', en: 'English', sv: 'Svenska'}
+// The museum's languages (Finnish, English, Swedish) and Ukrainian, in the order the picker lists
+// them. LANG_LABELS is the two-letter badge on the corner button; LANG_NAMES is each language's
+// own name, shown in the picker menu (so a Finnish visitor sees "Suomi", not a foreign word for
+// their language).
+export const LANGS = ['fi', 'en', 'sv', 'uk']
+export const LANG_LABELS = {fi: 'FI', en: 'EN', sv: 'SV', uk: 'UA'}
+export const LANG_NAMES = {fi: 'Suomi', en: 'English', sv: 'Svenska', uk: 'Українська'}
 export const DEFAULT_LANG = 'fi'
 
 // localStorage is shared by every site on the same host (all of someone.github.io), and the live
@@ -182,7 +216,7 @@ export const onLangChange = (listener) => {
 }
 
 // Builds the corner language control: a small round button showing the current language's badge
-// (FI/EN/SV) that opens a popup menu of all three, each in its own name. Returned as a detached
+// (FI/EN/SV/UA) that opens a popup menu of all four, each in its own name. Returned as a detached
 // <button> (class `ui-lang`, so the corner-positioning CSS applies) to append wherever the control
 // goes; it keeps its own badge in sync with the language, so callers don't manage it. `onInteract`
 // runs when the menu opens (ui.js uses it to unlock audio on the first gesture).

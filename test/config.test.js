@@ -40,7 +40,7 @@ const placements = [...Object.entries(EXHIBITS).flatMap(([code, e]) => e.creatur
 { const bad = LANGS.flatMap((lang) => Object.entries(STRINGS[lang]).filter(([key, value]) => typeof value !== typeof STRINGS[LANGS[0]][key] || value === '').map(([key]) => `${lang}.${key}`))
   check('no text is empty or of another kind (text vs function) than in the first language', bad.length === 0, bad.join(', ')) }
 check('the switch knows every language it can show', LANGS.every((lang) => STRINGS[lang] && LANG_LABELS[lang]) && Object.keys(STRINGS).length === LANGS.length)
-check('the languages are Finnish, English and Swedish, in that order', LANGS.join(',') === 'fi,en,sv')
+check('the languages are Finnish, English, Swedish and Ukrainian, in that order', LANGS.join(',') === 'fi,en,sv,uk')
 check('with nothing picked yet, the page starts in Finnish', DEFAULT_LANG === 'fi' && getLang() === 'fi')
 
 // ---------------------------------------------------------------- picking an exhibit from the address
