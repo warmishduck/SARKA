@@ -128,7 +128,10 @@ check('points off to the side are left out',
   near(wallDistance([...wallPoints, ...Array.from({length: 12}, () => pointAt(aside, 5))], origin, toObject), 2.005, 0.01))
 check('points behind the camera are left out',
   near(wallDistance([...wallPoints, ...Array.from({length: 12}, () => pointAt(dir.clone().negate(), 4))], origin, toObject), 2.005, 0.01))
+check('the target as a plain object, the way an 8th Wall event delivers it',
+  near(wallDistance(wallPoints, origin, {x: toObject.x, y: toObject.y, z: toObject.z}), 2.005, 0.01))
 check('too few points there: no distance', wallDistance(wallPoints.slice(0, 4), origin, toObject) === null)
+check('a handful is enough', wallDistance(wallPoints.slice(0, 5), origin, toObject) !== null)
 check('no points: no distance', wallDistance([], origin, toObject) === null)
 
 console.log(failures === 0 ? '\nALL FLOOR SPOT CHECKS PASSED' : `\n${failures} CHECK(S) FAILED`)

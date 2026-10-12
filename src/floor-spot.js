@@ -36,10 +36,13 @@ export const FLAT_TOLERANCE = 0.2
 /** A floor needs this many points in one band, and this share of all the points below the camera. */
 export const MIN_FLOOR_POINTS = 6
 export const MIN_FLOOR_SHARE = 0.25
-/** A wall is read from the points within this angle (radians) of the way to the object... */
-export const WALL_SEARCH_ANGLE = 0.12
-/** ...and needs at least this many of them. */
-export const MIN_WALL_POINTS = 6
+/**
+ * A wall is read from the points within this angle (radians, about 11°) of the way to the object:
+ * a painting spans that much from a few steps away, and the wall around it is at nearly the same
+ * distance. It needs at least this many of them; the median shrugs off a few stray ones.
+ */
+export const WALL_SEARCH_ANGLE = 0.2
+export const MIN_WALL_POINTS = 5
 
 /**
  * @param {number[]} values
@@ -87,11 +90,12 @@ export const floorHeight = (heights, cameraHeight) => {
  *
  * @param {{position: {x: number, y: number, z: number}}[]} points - The tracked world points.
  * @param {THREE.Vector3} origin - The camera's world position.
- * @param {THREE.Vector3} towards - Any point on the way to the object (its reported position).
+ * @param {{x: number, y: number, z: number}} towards - Any point on the way to the object (its
+ *   reported position; an 8th Wall event's plain object does as well as a Vector3).
  * @returns {number | null} Scene units from `origin`; null with too few points there.
  */
 export const wallDistance = (points, origin, towards) => {
-  const direction = towards.clone().sub(origin).normalize()
+  const direction = new THREE.Vector3(towards.x, towards.y, towards.z).sub(origin).normalize()
   const cosLimit = Math.cos(WALL_SEARCH_ANGLE)
   const offset = new THREE.Vector3()
   const distances = []

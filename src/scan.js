@@ -167,15 +167,15 @@ const scanPipelineModule = () => {
       hint.setText(TEXT.scanFloor)
     }
     if (state === 'found' && detail.name === foundName) {
-      objectPosition.copy(detail.position)
+      objectPosition.copy(detail.position)   // detail.position is a plain {x, y, z}
       // The way to the object is right, how far it is is not: take that from the points on it.
       const {camera} = XR8.Threejs.xrScene()
-      const distance = wallDistance(worldPoints, camera.position, detail.position)
+      const reported = objectPosition.distanceTo(camera.position)
+      const distance = wallDistance(worldPoints, camera.position, objectPosition)
       if (distance !== null) {
         objectPosition.sub(camera.position).setLength(distance).add(camera.position)
       }
-      debug?.set('wall', `${distance === null ? 'no points there' : `${distance.toFixed(2)} from points`}` +
-        `; image target says ${detail.position.distanceTo(camera.position).toFixed(2)}`)
+      debug?.set('wall', `${distance === null ? 'no points there' : `${distance.toFixed(2)} from points`}; image target says ${reported.toFixed(2)}`)
       glow.show(detail)
     }
   }
