@@ -3,8 +3,10 @@
 //  2. found: the object glows, and the visitor is asked to point the camera at the floor;
 //  3. placed: once they do, that exhibit's creatures appear on the floor where they look, short
 //     of the object's wall, facing them (see floor-spot.js), and the regular exhibit view
-//     (threejs-scene-init.js) takes over. The floor's height is measured first, from the
-//     engine's surface hits, because the world's y = 0 is only an assumption of where it is.
+//     (threejs-scene-init.js) takes over. Two things are measured from the engine's tracked
+//     world points first, because what the engine reports is only an assumption: how far the
+//     object's wall is (an image target's own distance came out several times too far) and how
+//     high the floor is (y = 0 is only where the engine puts it).
 // Add `debug` to the address (/?scan&debug) for a live readout of all this on the phone.
 
 import * as THREE from 'three'
@@ -13,7 +15,7 @@ import {CREATURES} from './content/creatures.js'
 import {IMAGE_TARGET_DATA} from './image-targets'
 import {routeFromImageTarget} from './route'
 import {TEXT} from './i18n'
-import {FLOOR_PITCH, flatSurfaceHeight, floorSpot, median} from './floor-spot'
+import {FLOOR_PITCH, floorHeight, floorSpot, median, wallDistance} from './floor-spot'
 import {createDebugPanel} from './debug-panel'
 import {initScenePipelineModule, placeCameraAtStart} from './threejs-scene-init'
 import {createSparkBurst} from './spark'
@@ -25,13 +27,10 @@ const GLOW_PULSE_SPEED = 4     // radians per second
 const GLOW_FADE_SPEED = 2      // opacity per second when it goes away
 const MIN_GLOW_SECONDS = 1.2   // the glow shows at least this long, even if already looking down
 
-// Where on the screen (x across, y down, both 0..1) the floor is asked about: three rows, so a
-// wall's foot can be told from a floor (see flatSurfaceHeight), and two off to the sides.
-const FLOOR_QUERY_POINTS = [[0.5, 0.55], [0.5, 0.7], [0.5, 0.85], [0.3, 0.7], [0.7, 0.7]]
-const FLOOR_QUERY_SECONDS = 0.1    // between two rounds of questions
-const FLOOR_SAMPLES_NEEDED = 5     // agreeing rounds before the floor counts as measured
+const FLOOR_SAMPLE_SECONDS = 0.1   // between two readings of the floor's height
+const FLOOR_SAMPLES_NEEDED = 5     // readings before the floor counts as measured
 const FLOOR_SAMPLES_KEPT = 9       // the median is taken over the latest of them
-const FLOOR_GIVE_UP_SECONDS = 2.5  // looking down this long without a measurement: assume y = 0
+const FLOOR_GIVE_UP_SECONDS = 2    // looking down this long without a measurement: assume y = 0
 
 /** A soft ring: clear in the middle so the object itself stays visible, brightest near its edge. */
 const makeGlowTexture = () => {
@@ -144,9 +143,10 @@ const scanPipelineModule = () => {
   let state = 'searching'   // -> 'found' -> 'placed'
   let foundName = null
   let foundSeconds = 0
-  const floorSamples = []     // heights of the floor, one per round of questions that agreed
+  let worldPoints = []        // the engine's tracked points, as of the latest frame
+  const floorSamples = []     // readings of the floor's height
   let lookingDownSeconds = 0
-  let secondsSinceQuery = 0
+  let secondsSinceSample = 0
   let exhibit = null
   let glow = null
   let hint = null
@@ -168,46 +168,45 @@ const scanPipelineModule = () => {
     }
     if (state === 'found' && detail.name === foundName) {
       objectPosition.copy(detail.position)
+      // The way to the object is right, how far it is is not: take that from the points on it.
+      const {camera} = XR8.Threejs.xrScene()
+      const distance = wallDistance(worldPoints, camera.position, detail.position)
+      if (distance !== null) {
+        objectPosition.sub(camera.position).setLength(distance).add(camera.position)
+      }
+      debug?.set('wall', `${distance === null ? 'no points there' : `${distance.toFixed(2)} from points`}` +
+        `; image target says ${detail.position.distanceTo(camera.position).toFixed(2)}`)
       glow.show(detail)
     }
   }
 
-  /** World `y` of every estimated surface the engine finds at the query points right now. */
-  const surfaceHeights = () => FLOOR_QUERY_POINTS.flatMap(([x, y]) => (
-    XR8.XrController.hitTest(x, y, ['ESTIMATED_SURFACE'])
-      .filter((hit) => hit.type === 'ESTIMATED_SURFACE')
-      .map((hit) => hit.position.y)
-  ))
-
   /**
-   * The floor's world height while the camera looks down at it: a median over several rounds of
-   * surface hits that agree. 8th Wall puts the floor at y = 0 only by assumption, and where the
-   * phone was held at the start decides how far that is from the real one.
+   * The floor's world height while the camera looks down at it: a median of several readings of
+   * the tracked points. 8th Wall puts the floor at y = 0 only by assumption, and where the phone
+   * was held at the start decides how far that is from the real one.
    *
    * @param {number} cameraY
    * @param {number} dt - Seconds since the last frame.
-   * @returns {number | null} null while still measuring; 0 once it gives up (nothing flat found).
+   * @returns {number | null} null while still measuring; 0 once it gives up (no clear floor).
    */
   const measureFloor = (cameraY, dt) => {
     lookingDownSeconds += dt
-    secondsSinceQuery += dt
-    if (secondsSinceQuery >= FLOOR_QUERY_SECONDS) {
-      secondsSinceQuery = 0
-      const heights = surfaceHeights()
-      const flat = flatSurfaceHeight(heights, cameraY)
-      debug?.set('surface hits (y)', heights.length ? heights.map((y) => y.toFixed(2)).join(' ') : 'none')
-      if (flat !== null) {
-        floorSamples.push(flat)
+    secondsSinceSample += dt
+    if (secondsSinceSample >= FLOOR_SAMPLE_SECONDS) {
+      secondsSinceSample = 0
+      const height = floorHeight(worldPoints.map((point) => point.position.y), cameraY)
+      if (height !== null) {
+        floorSamples.push(height)
         floorSamples.splice(0, floorSamples.length - FLOOR_SAMPLES_KEPT)
       }
     }
-    debug?.set('floor samples', `${floorSamples.length}/${FLOOR_SAMPLES_NEEDED}, looking down ${lookingDownSeconds.toFixed(1)}s`)
+    debug?.set('floor readings', `${floorSamples.length}/${FLOOR_SAMPLES_NEEDED}, of ${worldPoints.length} points, looking down ${lookingDownSeconds.toFixed(1)}s`)
     if (floorSamples.length >= FLOOR_SAMPLES_NEEDED) {
       debug?.set('floor', `measured y=${median(floorSamples).toFixed(2)}`)
       return median(floorSamples)
     }
     if (lookingDownSeconds >= FLOOR_GIVE_UP_SECONDS) {
-      debug?.set('floor', 'assumed y=0 (nothing flat found)')
+      debug?.set('floor', 'assumed y=0 (no clear floor in the points)')
       return 0
     }
     return null
@@ -247,13 +246,15 @@ const scanPipelineModule = () => {
       debug?.set('state', state)
     },
 
-    onUpdate: () => {
+    onUpdate: ({processCpuResult}) => {
       const dt = clock.getDelta()
       glow.update(dt)
+      worldPoints = processCpuResult?.reality?.worldPoints ?? worldPoints
       if (debug) {
         const {camera} = XR8.Threejs.xrScene()
         debug.set('camera', camera.position)
         debug.set(`looking down (y < ${FLOOR_PITCH})`, camera.getWorldDirection(forward).y)
+        debug.set('world points', worldPoints.length)
       }
       if (state === 'placed') {
         exhibitModule.onUpdate()

@@ -5,12 +5,13 @@
  * @param {Object} pageModule - The page's own camera pipeline module, added last.
  * @param {Object} [options]
  * @param {Object[]} [options.imageTargetData] - Image targets to watch for (image-target-cli
- *   output). World tracking stays on alongside them.
+ *   output). World tracking stays on alongside them, and the engine then also returns its tracked
+ *   points (`reality.worldPoints` in a module's `processCpuResult`), which scan.js measures with.
  */
 export const startXr = (pageModule, {imageTargetData} = {}) => {
   const onxrloaded = () => {
     if (imageTargetData) {
-      XR8.XrController.configure({imageTargetData})
+      XR8.XrController.configure({imageTargetData, enableWorldPoints: true})
     }
     XR8.addCameraPipelineModules([
       XR8.GlTextureRenderer.pipelineModule(),      // Draws the camera feed.
