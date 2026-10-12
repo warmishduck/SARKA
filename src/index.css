@@ -420,7 +420,7 @@ body.welcome-page {
   letter-spacing: 0.02em;
 }
 
-/* The popup list of all four languages the ui-lang button opens (built in i18n.js's
+/* The popup list of all three languages the ui-lang button opens (built in i18n.js's
    createLangPicker, appended to <body> and positioned in JS, so only its looks live here). */
 .ui-lang-menu {
   position: fixed;

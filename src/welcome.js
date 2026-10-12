@@ -56,7 +56,7 @@ export const startWelcome = ({unknownCode = false, hasScan = false} = {}) => {
 
   // ---- the words ----
   const root = make('div', 'ui welcome-ui')
-  const langButton = createLangPicker()   // self-syncing badge + popup menu of all four languages
+  const langButton = createLangPicker()   // self-syncing badge + popup menu of all three languages
   const card = make('div', 'welcome-card')
   const title = make('h1')
   const body = make('p', 'welcome-body')

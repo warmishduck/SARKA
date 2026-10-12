@@ -8,39 +8,6 @@
 // especially the longer sentences and the museum-signage tone.
 
 export const STRINGS = {
-  uk: {
-    loading: (done, total) => `Завантажую істот… ${done}/${total}`,
-    loadingLevel: 'Завантажую рівень…',
-    hintCreatures: 'Торкнись істоти — вона зреагує',
-    hintWall: 'Хтось ховається за стіною — торкнись її',
-    hintLevel: 'Торкнись землі — Glowcap піде туди. Його світло будує міст',
-    modeToLevel: '🎮 Рівень',
-    modeToCreatures: '🌰 Істоти',
-    actionGrow: '🌿 Виростити гілку',
-    actionRemove: '🍂 Прибрати гілку',
-    won: 'Glowcap дійшов до виходу! ✨',
-    branchLost: 'Гілка зникла: жолудь відійшов надто далеко',
-    left: 'Вліво',
-    right: 'Вправо',
-    jump: 'Стрибок',
-    mute: 'Вимкнути звук',
-    unmute: 'Увімкнути звук',
-    photo: 'Зробити фото',
-    share: 'Поділитися',
-    close: 'Закрити',
-    saveHelp: 'Затисни фото, щоб зберегти його',
-    photoFailed: 'Не вдалося зробити фото',
-    rotateRight: 'Повернути вправо',
-    rotateLeft: 'Повернути вліво',
-    language: 'Мова',
-    title: 'Лісові істоти · AR',
-    welcomeTitle: 'Лісові істоти',
-    welcomeBody: 'Відскануй QR-код біля експоната, щоб зустріти його істоту',
-    welcomeUnknown: 'Цей код не розпізнано. Спробуй відсканувати його ще раз.',
-    scanObjects: 'Навести на предмет',
-    scanHint: 'Наведи камеру на предмет у залі',
-    scanFloor: 'Знайдено! Тепер наведи камеру на підлогу перед собою',
-  },
   en: {
     loading: (done, total) => `Loading creatures… ${done}/${total}`,
     loadingLevel: 'Loading the level…',
@@ -142,18 +109,21 @@ export const STRINGS = {
   },
 }
 
-// The four museum languages. LANG_LABELS is the two-letter badge on the corner button;
-// LANG_NAMES is each language's own name, shown in the picker menu (so a Finnish visitor sees
-// "Suomi", not a foreign word for their language).
-export const LANGS = ['uk', 'en', 'fi', 'sv']
-export const LANG_LABELS = {uk: 'UA', en: 'EN', fi: 'FI', sv: 'SV'}
-export const LANG_NAMES = {uk: 'Українська', en: 'English', fi: 'Suomi', sv: 'Svenska'}
+// The three museum languages, in the order the picker lists them. LANG_LABELS is the two-letter
+// badge on the corner button; LANG_NAMES is each language's own name, shown in the picker menu (so
+// a Finnish visitor sees "Suomi", not a foreign word for their language).
+export const LANGS = ['fi', 'en', 'sv']
+export const LANG_LABELS = {fi: 'FI', en: 'EN', sv: 'SV'}
+export const LANG_NAMES = {fi: 'Suomi', en: 'English', sv: 'Svenska'}
+export const DEFAULT_LANG = 'fi'
 
-const LANG_KEY = 'lumina-ar-lang'
+// localStorage is shared by every site on the same host (all of someone.github.io), and the live
+// site stores its choice under the plain key `lumina-ar-lang`: so this one carries the site's
+// folder, or a language picked on the live site would turn up here, and the other way round.
+const LANG_KEY = `lumina-ar-lang:${typeof location !== 'undefined' ? location.pathname.replace(/[^/]*$/, '') : ''}`
 
-// Starts from whatever was picked last time; otherwise from the browser's own language (so a
-// Finnish visitor's phone opens in Finnish, a Swedish one in Swedish, the user's own in Ukrainian,
-// with no one having to choose). Falls back to English, the most widely understood here.
+// Starts from whatever the visitor picked last time, otherwise Finnish. Not the phone's own
+// language: a phone set to Swedish or English is no sign the visitor wants it here.
 const detectLang = () => {
   try {
     const saved = localStorage.getItem(LANG_KEY)
@@ -161,10 +131,9 @@ const detectLang = () => {
       return saved
     }
   } catch (e) {
-    // Storage blocked (private mode, restricted embed): fall through to the browser's language.
+    // Storage blocked (private mode, restricted embed): the default it is.
   }
-  const browser = (typeof navigator !== 'undefined' ? (navigator.language || '') : '').toLowerCase()
-  return LANGS.find((code) => browser.startsWith(code)) || 'en'
+  return DEFAULT_LANG
 }
 
 const saveLang = (lang) => {
@@ -213,11 +182,10 @@ export const onLangChange = (listener) => {
 }
 
 // Builds the corner language control: a small round button showing the current language's badge
-// (EN/UA/FI/SV) that opens a popup menu of all four, each in its own name. Returned as a detached
+// (FI/EN/SV) that opens a popup menu of all three, each in its own name. Returned as a detached
 // <button> (class `ui-lang`, so the corner-positioning CSS applies) to append wherever the control
 // goes; it keeps its own badge in sync with the language, so callers don't manage it. `onInteract`
-// runs when the menu opens (ui.js uses it to unlock audio on the first gesture). Replaces the old
-// two-way toggle — a cycle through four languages would be a confusing way to reach the last one.
+// runs when the menu opens (ui.js uses it to unlock audio on the first gesture).
 export const createLangPicker = ({onInteract = () => {}} = {}) => {
   const button = document.createElement('button')
   button.type = 'button'
