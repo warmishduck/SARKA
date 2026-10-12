@@ -49,9 +49,7 @@ export const EXHIBITS = {
   '01': {creatures: [alone('acorn')], imageTarget: '01'},
   '02': {creatures: [alone('pinecone')], imageTarget: '02'},
   '03': {creatures: [alone('glowcap')], game: 'light_the_way', imageTarget: '03'},
-  // Office test: cats painting → acorn creature.
-  'office-cats': {creatures: [alone('acorn')], imageTarget: 'cats-painting'},
-  // More office test objects: an abstract painting, a backlit sign and a wooden wall clock.
+  // Office test objects: an abstract painting, a backlit sign and a wooden wall clock.
   'office-painting': {creatures: [alone('pinecone')], imageTarget: 'abstract-painting'},
   'office-sign': {creatures: [alone('glowcap')], imageTarget: 'modify-sign'},
   'office-clock': {creatures: [alone('acorn')], imageTarget: 'wood-clock'},

@@ -58,7 +58,7 @@ check('/?scan opens the object scanner', route('?scan').kind === 'scan' && route
 check('an exhibit code wins over scan', route('?scan&c=03').kind === 'exhibit')
 
 // ---------------------------------------------------------------- picking an exhibit from a recognised object
-check('a known image target opens its exhibit', routeFromImageTarget('cats-painting')?.code === 'office-cats')
+check('a known image target opens its exhibit', routeFromImageTarget('abstract-painting')?.code === 'office-painting')
 check('an unknown image target opens nothing', routeFromImageTarget('nope') === null && routeFromImageTarget(undefined) === null)
 check('image target names are unique across exhibits', (() => {
   const names = Object.values(EXHIBITS).map((e) => e.imageTarget).filter(Boolean)
