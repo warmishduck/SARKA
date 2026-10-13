@@ -16,6 +16,12 @@ export const FACING_LIMIT = 0.5
 /** A marker closer to the wall than this (scene units) has nothing to walk out of. */
 export const MIN_WALL_CLEARANCE = 0.05
 
+/** Content stands this many marker widths tall (a marker printed on A4 is 21 cm wide, so about 40 cm). */
+export const CONTENT_HEIGHT_PER_MARKER_WIDTH = 2
+/** What world units are worth differs from session to session; stay within sane bounds of it. */
+export const MIN_CONTENT_SCALE = 0.05
+export const MAX_CONTENT_SCALE = 20
+
 /**
  * @typedef {Object} WallPlane
  * @property {THREE.Vector3} point - A point on the wall.
@@ -101,4 +107,26 @@ export const emergeStart = (position, plane, reach) => {
     return null
   }
   return position.clone().addScaledVector(plane.normal, -(inFront + reach))
+}
+
+/**
+ * How much to scale content so it stands the same size next to the marker in every session.
+ *
+ * The engine's world units are not metres: they are set by where the phone was when the camera
+ * started, so a creature of a fixed number of units came out tiny in one session and huge in the
+ * next. The marker's reported `scale` is its width in those same units, and its printed size is
+ * fixed, so content is sized from that.
+ *
+ * @param {number | undefined} markerWidth - `detail.scale` of the marker, in world units.
+ * @param {number} contentHeight - How tall the content is unscaled, in world units.
+ * @param {number} fallback - Used when the marker did not report a usable width.
+ * @returns {number}
+ */
+export const contentScale = (markerWidth, contentHeight, fallback) => {
+  if (!(markerWidth > 0) || !(contentHeight > 0)) {
+    return fallback
+  }
+  return THREE.MathUtils.clamp(
+    (CONTENT_HEIGHT_PER_MARKER_WIDTH * markerWidth) / contentHeight, MIN_CONTENT_SCALE, MAX_CONTENT_SCALE
+  )
 }

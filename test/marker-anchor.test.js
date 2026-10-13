@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 
 import {
-  MIN_WALL_CLEARANCE, emergeStart, markerPosition, wallPlane, yawToward,
+  CONTENT_HEIGHT_PER_MARKER_WIDTH, MAX_CONTENT_SCALE, MIN_CONTENT_SCALE, MIN_WALL_CLEARANCE, contentScale, emergeStart, markerPosition, wallPlane, yawToward,
 } from '../src/marker-anchor.js'
 
 let failures = 0
@@ -47,6 +47,11 @@ check('a marker at the wall has nothing to walk out of',
   emergeStart(new THREE.Vector3(0, 0, -1 + MIN_WALL_CLEARANCE / 2), straight, 0.6) === null)
 check('a marker behind the wall has nothing to walk out of',
   emergeStart(new THREE.Vector3(0, 0, -2), straight, 0.6) === null)
+
+check('content is as tall as the marker width says, whatever the units',
+  near(contentScale(1, 0.85, 0.6) * 0.85, CONTENT_HEIGHT_PER_MARKER_WIDTH) && near(contentScale(5, 0.85, 0.6) * 0.85, CONTENT_HEIGHT_PER_MARKER_WIDTH * 5))
+check('no marker width: the fallback', contentScale(undefined, 0.85, 0.6) === 0.6 && contentScale(0, 0.85, 0.6) === 0.6)
+check('absurd widths are held within bounds', contentScale(1e6, 0.85, 0.6) === MAX_CONTENT_SCALE && contentScale(1e-6, 0.85, 0.6) === MIN_CONTENT_SCALE)
 
 console.log(failures === 0 ? '\nALL MARKER ANCHOR CHECKS PASSED' : `\n${failures} CHECK(S) FAILED`)
 process.exit(failures ? 1 : 0)

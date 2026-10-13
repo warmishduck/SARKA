@@ -23,7 +23,7 @@ import {routeFromImageTarget} from './route'
 import {TEXT} from './i18n'
 import {FLOOR_PITCH, floorHeight, floorSpot, median, wallDistance} from './floor-spot'
 import {
-  MARKER_SEARCH_ANGLE, MIN_MARKER_POINTS, emergeStart, markerPosition, wallPlane, yawToward,
+  MARKER_SEARCH_ANGLE, MIN_MARKER_POINTS, contentScale, emergeStart, markerPosition, wallPlane, yawToward,
 } from './marker-anchor'
 import {createDebugPanel} from './debug-panel'
 import {initScenePipelineModule, placeCameraAtStart} from './threejs-scene-init'
@@ -32,8 +32,7 @@ import {startXr} from './xr-pipeline'
 
 /** The image target (public/image-targets/floor-marker.json) that is laid on the floor. */
 const FLOOR_MARKER = 'floor-marker'
-const MARKER_SCALE = 0.6       // how large the content stands on the marker (1 = the creature's own size)
-const EMERGE_REACH = 0.3       // extra distance behind the wall the creature starts at, scene units
+const MARKER_SCALE = 0.6       // content scale when the marker reports no width (see contentScale)
 
 const GLOW_COLOR = 0xffd98a
 const GLOW_SIZE = 1.8          // the halo's diameter, in multiples of the object's size
@@ -173,6 +172,7 @@ const scanPipelineModule = () => {
   const markerMode = new URLSearchParams(window.location.search).has('marker')
   let wall = null              // marker flow: the exhibit object's wall plane (marker-anchor.js)
   let markerAt = null          // marker flow: where the floor marker is, a THREE.Vector3
+  let markerWidth = 0          // marker flow: its width in world units (detail.scale)
 
   const onObjectSeen = ({detail}) => {
     if (markerMode && detail.name === FLOOR_MARKER) {
@@ -228,6 +228,8 @@ const scanPipelineModule = () => {
       return
     }
     markerAt = markerPosition(detail.position, camera.position, distance)
+    markerWidth = detail.scale
+    debug?.set('marker width', detail.scale)
     debug?.set('marker at', markerAt)
   }
 
@@ -255,9 +257,11 @@ const scanPipelineModule = () => {
     const {scene} = XR8.Threejs.xrScene()
     addWallOccluder(scene)
     const yaw = yawToward(markerAt, camera.position)
-    const reach = tallestCreature(exhibit) * MARKER_SCALE + EMERGE_REACH
+    const scale = contentScale(markerWidth, tallestCreature(exhibit), MARKER_SCALE)
+    debug?.set('content scale', scale)
+    const reach = tallestCreature(exhibit) * scale
     placeExhibit(
-      {position: markerAt.clone(), yaw, scale: MARKER_SCALE},
+      {position: markerAt.clone(), yaw, scale},
       {puzzlesEnabled: false, emergeFrom: emergeStart(markerAt, wall, reach)}
     )
   }
