@@ -144,6 +144,9 @@ const scanPipelineModule = () => {
   let foundName = null
   let foundSeconds = 0
   let worldPoints = []        // the engine's tracked points, as of the latest frame
+  // Until the engine has worked out where the phone is it returns no points and keeps moving the
+  // world about, so content placed then jumps or follows the camera. null until the first report.
+  let tracking = null
   const floorSamples = []     // readings of the floor's height
   let lookingDownSeconds = 0
   let secondsSinceSample = 0
@@ -178,6 +181,11 @@ const scanPipelineModule = () => {
       debug?.set('wall', `${distance === null ? 'no points there' : `${distance.toFixed(2)} from points`}; image target says ${reported.toFixed(2)}`)
       glow.show(detail)
     }
+  }
+
+  const onTrackingStatus = ({detail}) => {
+    tracking = detail
+    debug?.set('tracking', `${detail.status} ${detail.reason}`)
   }
 
   /**
@@ -269,8 +277,14 @@ const scanPipelineModule = () => {
         const {camera} = XR8.Threejs.xrScene()
         camera.getWorldDirection(forward)
         if (forward.y >= FLOOR_PITCH) {
+          hint.setText(TEXT.scanFloor)
           return
         }
+        if (tracking && tracking.status !== 'NORMAL') {
+          hint.setText(TEXT.scanMove)
+          return
+        }
+        hint.setText(TEXT.scanFloor)
         const floorY = measureFloor(camera.position.y, dt)
         if (floorY === null) {
           return
@@ -295,6 +309,7 @@ const scanPipelineModule = () => {
     listeners: [
       {event: 'reality.imagefound', process: onObjectSeen},
       {event: 'reality.imageupdated', process: onObjectSeen},
+      {event: 'reality.trackingstatus', process: onTrackingStatus},
     ],
   }
 }
