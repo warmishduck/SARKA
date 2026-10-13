@@ -1,0 +1,23 @@
+{
+  "imagePath": "image-targets/cats-painting_luminance.jpg",
+  "metadata": null,
+  "name": "cats-painting",
+  "type": "PLANAR",
+  "properties": {
+    "top": 280,
+    "left": 683,
+    "width": 998,
+    "height": 1330,
+    "isRotated": true,
+    "originalWidth": 2576,
+    "originalHeight": 1932
+  },
+  "resources": {
+    "originalImage": "cats-painting_original.jpg",
+    "croppedImage": "cats-painting_cropped.jpg",
+    "thumbnailImage": "cats-painting_thumbnail.jpg",
+    "luminanceImage": "cats-painting_luminance.jpg"
+  },
+  "created": 1791296000151,
+  "updated": 1791296000151
+}
