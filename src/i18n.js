@@ -41,6 +41,7 @@ export const STRINGS = {
     scanHint: 'Point the camera at a museum exhibit',
     scanFloor: 'Found it! Now point the camera at the floor in front of you',
     scanMove: 'Hold on, the camera is getting its bearings. Move the phone slowly from side to side',
+    scanMarker: 'Found it! Now point the camera at the marker on the floor',
   },
   fi: {
     loading: (done, total) => `Ladataan olentoja… ${done}/${total}`,
@@ -75,6 +76,7 @@ export const STRINGS = {
     scanHint: 'Osoita kamera museoesineeseen',
     scanFloor: 'Löytyi! Osoita nyt kameralla lattiaan edessäsi',
     scanMove: 'Hetki, kamera hahmottaa tilaa. Liikuta puhelinta hitaasti sivulta toiselle',
+    scanMarker: 'Löytyi! Osoita nyt kameralla lattialla olevaa merkkiä',
   },
   sv: {
     loading: (done, total) => `Laddar varelser… ${done}/${total}`,
@@ -109,6 +111,7 @@ export const STRINGS = {
     scanHint: 'Rikta kameran mot ett museiföremål',
     scanFloor: 'Hittad! Rikta nu kameran mot golvet framför dig',
     scanMove: 'Vänta, kameran orienterar sig. Flytta telefonen långsamt från sida till sida',
+    scanMarker: 'Hittad! Rikta nu kameran mot markören på golvet',
   },
   uk: {
     loading: (done, total) => `Завантажую істот… ${done}/${total}`,
@@ -143,6 +146,7 @@ export const STRINGS = {
     scanHint: 'Наведи камеру на предмет у залі',
     scanFloor: 'Знайдено! Тепер наведи камеру на підлогу перед собою',
     scanMove: 'Зачекай, камера орієнтується. Повільно поводь телефоном з боку в бік',
+    scanMarker: 'Знайдено! Тепер наведи камеру на маркер на підлозі',
   },
 }
 

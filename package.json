@@ -4,7 +4,7 @@
     "serve": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --no-warnings test/platformer.test.js && node --no-warnings test/config.test.js && node --no-warnings test/puzzle-logic.test.js && node --no-warnings test/floor-spot.test.js"
+    "test": "node --no-warnings test/platformer.test.js && node --no-warnings test/config.test.js && node --no-warnings test/puzzle-logic.test.js && node --no-warnings test/floor-spot.test.js && node --no-warnings test/marker-anchor.test.js"
   },
   "dependencies": {
     "@8thwall/engine-binary": "^1.0.0",

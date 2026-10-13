@@ -15,6 +15,11 @@ import {createShowcase} from './showcase'
 import {isMuted, playSound, resumeAudio, setMuted} from './sound'
 import {createUi} from './ui'
 
+const EMERGE_SPEED = 0.4          // scene units per second, walking out from behind the wall
+const EMERGE_MIN_SECONDS = 1.5
+const EMERGE_MAX_SECONDS = 6
+const FOLLOW_RATE = 4            // 1/s: how fast content eases after a marker that moved
+
 /**
  * Sets the AR camera's starting pose: 2 units above the floor (y = 0), pulled back so the
  * creatures standing around the origin fit a portrait screen. Call once, when the camera starts.
@@ -34,16 +39,21 @@ export const placeCameraAtStart = (camera) => {
  *   another module already started
  *   (scan.js calls onStart/onUpdate itself). Without it the content stands at the world origin
  *   and this module sets the camera up.
- * @returns {Object} An 8th Wall camera pipeline module.
+ * @param {boolean} [options.puzzlesEnabled] - False: creatures are awake from the start, no
+ *   puzzle and no stone wall (the marker flow, where the real wall does the hiding).
+ * @param {THREE.Vector3} [options.emergeFrom] - With an anchor: start the content here and walk
+ *   it to the anchor (EMERGE_SPEED), so it comes out from behind an invisible wall.
+ * @returns {Object} An 8th Wall camera pipeline module, plus `moveAnchor(position)`: the anchor
+ *   follows a marker that is tracked again (the content eases to the new spot).
  */
-export const initScenePipelineModule = (exhibit, {anchor = null} = {}) => {
+export const initScenePipelineModule = (exhibit, {anchor = null, puzzlesEnabled = true, emergeFrom = null} = {}) => {
   const clock = new THREE.Clock()
 
   const hasCreatures = exhibit.creatures.length > 0
   // Placed by the scanner, a creature still behind its puzzle hides behind a stone wall instead of
   // standing as a silhouette (see showcase.js's lockStyle).
   const lockStyle = anchor ? 'wall' : 'silhouette'
-  const hidesBehindWall = lockStyle === 'wall' &&
+  const hidesBehindWall = lockStyle === 'wall' && puzzlesEnabled &&
     exhibit.creatures.some((placement) => ({...CREATURES[placement.id], ...placement}).puzzle)
   // What plays, if anything (content/games.js turns an id like 'light_the_way' into the level
   // data an actual game reads). Only one `type` exists yet ('platformer', run by level.js); a
@@ -57,6 +67,19 @@ export const initScenePipelineModule = (exhibit, {anchor = null} = {}) => {
   let level = null
   let mode = hasCreatures && exhibit.startIn !== 'game' ? 'creatures' : 'level'
   let showingLevelLoading = false   // the "loading the level" note is up
+
+  // What anchors the content: the stage group everything stands in, where it is heading, and
+  // (until it has arrived) the walk it makes from behind the wall.
+  let stage = null
+  let shadowFloor = null
+  const anchorTarget = anchor ? anchor.position.clone() : null
+  const emerging = emergeFrom && anchor
+    ? {
+      from: emergeFrom.clone(),
+      elapsed: 0,
+      seconds: THREE.MathUtils.clamp(emergeFrom.distanceTo(anchor.position) / EMERGE_SPEED, EMERGE_MIN_SECONDS, EMERGE_MAX_SECONDS),
+    }
+    : null
 
   // The on-screen extras (loading note, hint, buttons), created in onStart.
   let ui = null
@@ -87,9 +110,9 @@ export const initScenePipelineModule = (exhibit, {anchor = null} = {}) => {
     renderer.localClippingEnabled = true
 
     // Everything the exhibit shows lives in `stage`, so an anchor moves it all at once.
-    const stage = new THREE.Group()
+    stage = new THREE.Group()
     if (anchor) {
-      stage.position.copy(anchor.position)
+      stage.position.copy(emerging ? emerging.from : anchor.position)
       stage.rotation.y = anchor.yaw
       stage.scale.setScalar(anchor.scale)
     }
@@ -98,7 +121,7 @@ export const initScenePipelineModule = (exhibit, {anchor = null} = {}) => {
     const {glowLight, keyLight} = addLights(scene, renderer)
     stage.add(keyLight, keyLight.target)   // its shadows only reach +/-2 around the target
 
-    showcase = createShowcase({placements: exhibit.creatures, glowLight, onProgress: modelProgress, lockStyle})
+    showcase = createShowcase({placements: exhibit.creatures, glowLight, onProgress: modelProgress, puzzlesEnabled, lockStyle})
     showcase.load(stage)
 
     // The level diorama. Hidden (and not even loaded) until it is shown.
@@ -117,7 +140,7 @@ export const initScenePipelineModule = (exhibit, {anchor = null} = {}) => {
       stage.add(level.root)
     }
 
-    const shadowFloor = addShadowFloor(scene)
+    shadowFloor = addShadowFloor(scene)
     if (anchor) {
       shadowFloor.position.y = anchor.position.y   // the scanner's floor is measured, not always y = 0
     }
@@ -125,6 +148,19 @@ export const initScenePipelineModule = (exhibit, {anchor = null} = {}) => {
     if (!anchor) {
       placeCameraAtStart(camera)
     }
+  }
+
+  // Walks the stage out from behind the wall, then eases it after a marker that moved.
+  const updateAnchor = (dt) => {
+    if (!stage || !anchorTarget) {
+      return
+    }
+    if (emerging && emerging.elapsed < emerging.seconds) {
+      emerging.elapsed += dt
+      stage.position.lerpVectors(emerging.from, anchorTarget, Math.min(1, emerging.elapsed / emerging.seconds))
+      return
+    }
+    stage.position.lerp(anchorTarget, 1 - Math.exp(-dt * FOLLOW_RATE))
   }
 
   // Recentering moves the camera back to its start pose; anchored content would not follow it.
@@ -271,7 +307,17 @@ export const initScenePipelineModule = (exhibit, {anchor = null} = {}) => {
         return
       }
 
+      updateAnchor(dt)
       showcase.update(dt, t)
+    },
+
+    moveAnchor: (position) => {
+      if (anchorTarget) {
+        anchorTarget.copy(position)
+        if (shadowFloor) {
+          shadowFloor.position.y = position.y
+        }
+      }
     },
   }
 }

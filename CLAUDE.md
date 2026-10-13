@@ -48,6 +48,7 @@ src/
   welcome.js              The welcome page (no camera, Three.js preview)
   scan.js                 Object scanner (/?scan): find object → glow → exhibit on the floor ahead
   floor-spot.js           Pure maths: where on the floor the scanner places content (tested)
+  marker-anchor.js        Pure maths for /?scan&marker: wall plane, marker position, walk-out start (tested)
   stone-wall.js           Procedural stone wall a locked creature hides behind (scanner flow)
   debug-panel.js          On-phone readout of live values, only with ?debug in the address
   xr-pipeline.js          The shared 8th Wall camera pipeline every AR page starts with
@@ -345,9 +346,9 @@ npm test
 Tests live in `test/`. They run in Node (no browser, no 8th Wall).
 `config.test.js` checks i18n keys, exhibit codes, routing (incl. `?scan` and
 image-target lookup). `puzzle-logic.test.js` and `platformer.test.js` cover game logic.
-`floor-spot.test.js` covers the scanner's floor-placement maths.
+`floor-spot.test.js` covers the scanner's floor-placement maths, `marker-anchor.test.js` the marker flow's.
 
-The `test` script in `package.json` lists the four files by name, so a new test file
+The `test` script in `package.json` lists the five files by name, so a new test file
 is not run until it is added there.
 
 When adding a new i18n key, the test will fail until all four languages have it.

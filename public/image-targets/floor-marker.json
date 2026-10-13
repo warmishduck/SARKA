@@ -1,0 +1,23 @@
+{
+  "imagePath": "image-targets/floor-marker_luminance.jpg",
+  "metadata": null,
+  "name": "floor-marker",
+  "type": "PLANAR",
+  "properties": {
+    "top": 0,
+    "left": 0,
+    "width": 1500,
+    "height": 2000,
+    "isRotated": false,
+    "originalWidth": 1500,
+    "originalHeight": 2000
+  },
+  "resources": {
+    "originalImage": "floor-marker_original.jpg",
+    "croppedImage": "floor-marker_cropped.jpg",
+    "thumbnailImage": "floor-marker_thumbnail.jpg",
+    "luminanceImage": "floor-marker_luminance.jpg"
+  },
+  "created": 1791878054679,
+  "updated": 1791878054679
+}

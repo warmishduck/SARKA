@@ -92,11 +92,14 @@ export const floorHeight = (heights, cameraHeight) => {
  * @param {THREE.Vector3} origin - The camera's world position.
  * @param {{x: number, y: number, z: number}} towards - Any point on the way to the object (its
  *   reported position; an 8th Wall event's plain object does as well as a Vector3).
+ * @param {Object} [options]
+ * @param {number} [options.angle] - How wide the cone around that direction is (radians).
+ * @param {number} [options.minPoints] - How many points it needs to answer.
  * @returns {number | null} Scene units from `origin`; null with too few points there.
  */
-export const wallDistance = (points, origin, towards) => {
+export const wallDistance = (points, origin, towards, {angle = WALL_SEARCH_ANGLE, minPoints = MIN_WALL_POINTS} = {}) => {
   const direction = new THREE.Vector3(towards.x, towards.y, towards.z).sub(origin).normalize()
-  const cosLimit = Math.cos(WALL_SEARCH_ANGLE)
+  const cosLimit = Math.cos(angle)
   const offset = new THREE.Vector3()
   const distances = []
   points.forEach(({position}) => {
@@ -106,7 +109,7 @@ export const wallDistance = (points, origin, towards) => {
       distances.push(length)
     }
   })
-  return distances.length >= MIN_WALL_POINTS ? median(distances) : null
+  return distances.length >= minPoints ? median(distances) : null
 }
 
 /**

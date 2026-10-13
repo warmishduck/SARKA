@@ -8,6 +8,12 @@
 //     object's wall is (an image target's own distance came out several times too far) and how
 //     high the floor is (y = 0 is only where the engine puts it).
 // Add `debug` to the address (/?scan&debug) for a live readout of all this on the phone.
+//
+// `/?scan&marker` is the marker flow: the exhibit's object still names the exhibit and gives the
+// wall, but the content stands on a marker printed and laid on the floor (FLOOR_MARKER) and is
+// re-anchored to it whenever the marker is seen again, which keeps it from drifting. An invisible
+// plane on the real wall hides what is behind it, and the creature starts behind the wall and
+// walks out through it (see marker-anchor.js).
 
 import * as THREE from 'three'
 
@@ -16,10 +22,18 @@ import {IMAGE_TARGET_DATA} from './image-targets'
 import {routeFromImageTarget} from './route'
 import {TEXT} from './i18n'
 import {FLOOR_PITCH, floorHeight, floorSpot, median, wallDistance} from './floor-spot'
+import {
+  MARKER_SEARCH_ANGLE, MIN_MARKER_POINTS, emergeStart, markerPosition, wallPlane, yawToward,
+} from './marker-anchor'
 import {createDebugPanel} from './debug-panel'
 import {initScenePipelineModule, placeCameraAtStart} from './threejs-scene-init'
 import {createSparkBurst} from './spark'
 import {startXr} from './xr-pipeline'
+
+/** The image target (public/image-targets/floor-marker.json) that is laid on the floor. */
+const FLOOR_MARKER = 'floor-marker'
+const MARKER_SCALE = 0.6       // how large the content stands on the marker (1 = the creature's own size)
+const EMERGE_REACH = 0.3       // extra distance behind the wall the creature starts at, scene units
 
 const GLOW_COLOR = 0xffd98a
 const GLOW_SIZE = 1.8          // the halo's diameter, in multiples of the object's size
@@ -156,8 +170,15 @@ const scanPipelineModule = () => {
   let canvas = null
   let exhibitModule = null
   const debug = createDebugPanel()
+  const markerMode = new URLSearchParams(window.location.search).has('marker')
+  let wall = null              // marker flow: the exhibit object's wall plane (marker-anchor.js)
+  let markerAt = null          // marker flow: where the floor marker is, a THREE.Vector3
 
   const onObjectSeen = ({detail}) => {
+    if (markerMode && detail.name === FLOOR_MARKER) {
+      onMarkerSeen({detail})
+      return
+    }
     debug?.set('seen', `${detail.name} scale=${detail.scale?.toFixed(2)} pos=${detail.position.x.toFixed(2)}, ${detail.position.y.toFixed(2)}, ${detail.position.z.toFixed(2)}`)
     if (state === 'searching') {
       const match = routeFromImageTarget(detail.name)
@@ -167,7 +188,7 @@ const scanPipelineModule = () => {
       state = 'found'
       foundName = detail.name
       exhibit = match.exhibit
-      hint.setText(TEXT.scanFloor)
+      hint.setText(markerMode ? TEXT.scanMarker : TEXT.scanFloor)
     }
     if (state === 'found' && detail.name === foundName) {
       objectPosition.copy(detail.position)   // detail.position is a plain {x, y, z}
@@ -178,9 +199,67 @@ const scanPipelineModule = () => {
       if (distance !== null) {
         objectPosition.sub(camera.position).setLength(distance).add(camera.position)
       }
+      if (markerMode) {
+        wall = wallPlane(camera.position, objectPosition, detail.rotation)
+        debug?.set('wall plane normal', wall.normal)
+      }
       debug?.set('wall', `${distance === null ? 'no points there' : `${distance.toFixed(2)} from points`}; image target says ${reported.toFixed(2)}`)
       glow.show(detail)
     }
+  }
+
+  /**
+   * The floor marker, seen or seen again: where it is, along its own direction at the distance
+   * the tracked points give. Before the exhibit is placed that is all; after it, the content eases
+   * to the new spot, but only on a distance read from points (the reported one is not trusted).
+   */
+  const onMarkerSeen = ({detail}) => {
+    const {camera} = XR8.Threejs.xrScene()
+    const distance = wallDistance(worldPoints, camera.position, detail.position, {
+      angle: MARKER_SEARCH_ANGLE, minPoints: MIN_MARKER_POINTS,
+    })
+    debug?.set('marker', `${distance === null ? 'no points there' : `${distance.toFixed(2)} from points`}; target says ${camera.position.distanceTo(detail.position).toFixed(2)}`)
+    if (state === 'placed') {
+      if (distance !== null) {
+        const position = markerPosition(detail.position, camera.position, distance)
+        debug?.set('marker at', position)
+        exhibitModule.moveAnchor(position)
+      }
+      return
+    }
+    markerAt = markerPosition(detail.position, camera.position, distance)
+    debug?.set('marker at', markerAt)
+  }
+
+  /** An invisible plane on the real wall: it writes depth but no colour, so what lies behind it is not drawn. */
+  const addWallOccluder = (scene) => {
+    const occluder = new THREE.Mesh(
+      new THREE.PlaneGeometry(60, 60),
+      new THREE.MeshBasicMaterial({colorWrite: false, side: THREE.DoubleSide})
+    )
+    occluder.renderOrder = -1
+    occluder.position.copy(wall.point)
+    occluder.lookAt(wall.point.clone().add(wall.normal))
+    scene.add(occluder)
+  }
+
+  /** Marker flow: once the wall and the marker are both known and tracking is steady, stand the exhibit on the marker. */
+  const placeOnMarker = (camera) => {
+    if (!wall || !markerAt) {
+      return
+    }
+    if (tracking && tracking.status !== 'NORMAL') {
+      hint.setText(TEXT.scanMove)
+      return
+    }
+    const {scene} = XR8.Threejs.xrScene()
+    addWallOccluder(scene)
+    const yaw = yawToward(markerAt, camera.position)
+    const reach = tallestCreature(exhibit) * MARKER_SCALE + EMERGE_REACH
+    placeExhibit(
+      {position: markerAt.clone(), yaw, scale: MARKER_SCALE},
+      {puzzlesEnabled: false, emergeFrom: emergeStart(markerAt, wall, reach)}
+    )
   }
 
   const onTrackingStatus = ({detail}) => {
@@ -220,7 +299,7 @@ const scanPipelineModule = () => {
     return null
   }
 
-  const placeExhibit = (anchor) => {
+  const placeExhibit = (anchor, options = {}) => {
     state = 'placed'
     debug?.set('state', state)
     debug?.set('anchor', anchor.position)
@@ -232,7 +311,7 @@ const scanPipelineModule = () => {
     const {renderer} = XR8.Threejs.xrScene()
     renderer.resetState()
     try {
-      exhibitModule = initScenePipelineModule(exhibit, {anchor})
+      exhibitModule = initScenePipelineModule(exhibit, {anchor, ...options})
       exhibitModule.onStart({canvas})
     } catch (error) {
       debug?.set('place error', error?.stack || error)
@@ -275,6 +354,10 @@ const scanPipelineModule = () => {
           return
         }
         const {camera} = XR8.Threejs.xrScene()
+        if (markerMode) {
+          placeOnMarker(camera)
+          return
+        }
         camera.getWorldDirection(forward)
         if (forward.y >= FLOOR_PITCH) {
           hint.setText(TEXT.scanFloor)
