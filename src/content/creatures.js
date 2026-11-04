@@ -57,5 +57,6 @@ export const CREATURES = {
     puzzle: {pieces: 6, rows: 3, cols: 2, snapRatio: 0.15, hintMs: 15000, art: 'Glowcap-art.png', label: 'Glowcap'},
   },
   // Test model from the artist (no clips, no rig): floats and bobs like the others.
-  ghost: {file: 'AnotherGhost.glb', targetHeight: 0.5, phase: 0, hop: false},
+  // The eyes on its sheet look the model's -z way (its back), so it is turned round to face the visitor.
+  ghost: {file: 'AnotherGhost.glb', targetHeight: 0.5, phase: 0, yaw: Math.PI, hop: false},
 }
