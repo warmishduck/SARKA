@@ -80,7 +80,7 @@ export const EXHIBITS = {
   // ML recognition test: cats painting → ML model detects the physical object from any angle.
   // The cats painting is 50 x 40 cm; its image target crop is about 48 x 36 cm.
   'test-purifier': {
-    creatures: [at('pinecone', 0, 0, GROUNDED)], imageTarget: 'cats-painting', mlTarget: 'air-purifier',
+    creatures: [at('ghost', 0, 0, {...GROUNDED, targetHeight: 0.8})], imageTarget: 'cats-painting', mlTarget: 'air-purifier',
     objectSize: {radius: 0.13, height: 0.49}, posterWidth: 0.36,
   },
   // objectSize is a guess; measure the real station.
