@@ -27,8 +27,9 @@
 //   unlockAnim the clip to play once, in full, the moment the puzzle is solved (its "waking up"
 //               animation) before settling into its `reactions`. Optional: without one it still
 //               unlocks, just with no dedicated animation for the moment itself.
-//   walkAnim   the clip to loop while it walks out from behind its wall (the scanner's lock
-//               style, see showcase.js). Optional: without one it glides out.
+//   walkAnim   the clip to loop while it moves out from behind something: its stone wall (the
+//               scanner's lock style), an object it walks round or a wall (see showcase.js).
+//               Optional: without one it glides out.
 // A placement in an exhibit can override any of these for that one exhibit.
 
 export const CREATURES = {
@@ -58,5 +59,6 @@ export const CREATURES = {
   },
   // Test model from the artist (no clips, no rig): floats and bobs like the others.
   // The eyes on its sheet look the model's -z way (its back), so it is turned round to face the visitor.
-  ghost: {file: 'AnotherGhost.glb', targetHeight: 0.5, phase: 0, yaw: Math.PI, hop: false},
+  // Its clips are baked cloth (shape keys): Idle sways, Fly streams back while it moves out.
+  ghost: {file: 'AnotherGhost.glb', targetHeight: 0.5, phase: 0, yaw: Math.PI, hop: false, walkAnim: 'Fly'},
 }

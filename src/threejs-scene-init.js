@@ -91,6 +91,7 @@ export const initScenePipelineModule = (exhibit, {anchor = null, puzzlesEnabled 
   const emerging = route
     ? {elapsed: 0, seconds: THREE.MathUtils.clamp(routeLength / EMERGE_SPEED, EMERGE_MIN_SECONDS, EMERGE_MAX_SECONDS)}
     : null
+  let carrying = false   // the showcase has been told the content is on its way (setMoving)
 
   /**
    * Where along the route the content is, and which way that leg of it heads.
@@ -189,8 +190,13 @@ export const initScenePipelineModule = (exhibit, {anchor = null, puzzlesEnabled 
     if (!stage || !anchorTarget) {
       return
     }
+    const walking = !!emerging && emerging.elapsed < emerging.seconds
+    if (walking !== carrying) {
+      carrying = walking
+      showcase.setMoving(walking)
+    }
     const turnRate = 1 - Math.exp(-dt * TURN_RATE)
-    if (emerging && emerging.elapsed < emerging.seconds) {
+    if (walking) {
       emerging.elapsed += dt
       const {position, heading} = alongRoute(routeLength * Math.min(1, emerging.elapsed / emerging.seconds))
       stage.position.copy(position)

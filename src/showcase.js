@@ -87,8 +87,10 @@ export const createShowcase = ({
   const sinks = items.map(() => null)                 // seconds into its wall's sink (< 0: waiting)
   const dust = items.map(() => null)                  // the puff as its wall starts to sink
   const sunk = items.map(() => false)                 // its wall is gone
+  const carryActions = items.map(() => null)          // its walkAnim action while the anchor carries it
 
   let finished = 0    // how many models have loaded (or failed to)
+  let carried = false // the anchor is carrying the creatures along (setMoving)
   let now = 0         // the time of the latest update(), which taps are stamped with
   let active = true   // false while something else (the level) has the stage
 
@@ -275,6 +277,7 @@ export const createShowcase = ({
           if (reactions) {
             setupReactions(index, mixer, mixer.clipAction(idleClip), clips, reactions)
           }
+          applyCarried(index)
         }
         if (walls[index]) {
           // Out of sight behind its wall until the puzzle is solved (it may already be, if the
@@ -378,6 +381,26 @@ export const createShowcase = ({
     walks[index] = {from: groups[index].position.clone(), elapsed: 0, action}
   }
 
+  // While the anchor carries the creatures along (the scanner's walk out from behind an object),
+  // one with a `walkAnim` loops it; once they stop it eases back into its idle loop. A model that
+  // loads mid-walk joins in (loadItem calls this too).
+  const applyCarried = (index) => {
+    const mixer = mixerByIndex[index]
+    const clips = clipsByIndex[index]
+    const walkClip = items[index].walkAnim && clips && THREE.AnimationClip.findByName(clips, items[index].walkAnim)
+    if (!mixer || !walkClip || walks[index]) {
+      return
+    }
+    const idleAction = mixer.clipAction(THREE.AnimationClip.findByName(clips, 'Idle') || clips[0])
+    if (carried && !carryActions[index]) {
+      carryActions[index] = mixer.clipAction(walkClip)
+      carryActions[index].reset().setLoop(THREE.LoopRepeat, Infinity).play().crossFadeFrom(idleAction, 0.3, false)
+    } else if (!carried && carryActions[index]) {
+      idleAction.reset().play().crossFadeFrom(carryActions[index], 0.4, false)
+      carryActions[index] = null
+    }
+  }
+
   // Takes a wall out of the scene for good: hidden, and no longer caught by taps.
   const removeWall = (index) => {
     sinks[index] = null
@@ -406,6 +429,17 @@ export const createShowcase = ({
         onProgress(0, 0)
       }
       items.forEach((item, i) => loadItem(i, scene))
+    },
+
+    /**
+     * The anchor starts or stops carrying the creatures along: each one with a `walkAnim` plays it
+     * meanwhile (see applyCarried).
+     *
+     * @param {boolean} on
+     */
+    setMoving(on) {
+      carried = on
+      items.forEach((_, i) => applyCarried(i))
     },
 
     // Shows the creatures or hides them (the level takes the stage). Either way the glows start
