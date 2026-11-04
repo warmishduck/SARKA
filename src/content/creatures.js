@@ -56,4 +56,6 @@ export const CREATURES = {
     file: 'Glowcap.glb', targetHeight: 0.55, phase: Math.PI, spinSpeed: -0.5, hop: false, glow: true,
     puzzle: {pieces: 6, rows: 3, cols: 2, snapRatio: 0.15, hintMs: 15000, art: 'Glowcap-art.png', label: 'Glowcap'},
   },
+  // Test model from the artist (no clips, no rig): floats and bobs like the others.
+  ghost: {file: 'AnotherGhost.glb', targetHeight: 0.5, phase: 0, hop: false},
 }

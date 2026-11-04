@@ -75,7 +75,7 @@ export const EXHIBITS = {
   '03': {creatures: [alone('glowcap')], game: 'light_the_way', imageTarget: '03'},
   // Office test objects: an abstract painting, a cats painting and a wooden wall clock.
   'office-painting': {creatures: [alone('pinecone')], imageTarget: 'abstract-painting'},
-  'office-cats': {creatures: [alone('glowcap')], imageTarget: 'cats-painting'},
+  'office-cats': {creatures: [alone('ghost')], imageTarget: 'cats-painting'},
   'office-clock': {creatures: [alone('acorn')], imageTarget: 'wood-clock'},
   // ML recognition test: cats painting → ML model detects the physical object from any angle.
   // The cats painting is 50 x 40 cm; its image target crop is about 48 x 36 cm.
