@@ -10,7 +10,7 @@
 //   yaw        starting rotation about the vertical axis, in radians
 //   spinSpeed  turntable spin in rad/s (default 0: it just faces the viewer)
 //   hover/bob  how high it floats above the floor and how much it bobs (defaults 0.08/0.05)
-//   pulse      how much it "breathes" (heartbeat scale pulse), a share of its size (default 0.05; 0 = still)
+//   pulse      how much it "breathes" (heartbeat scale pulse), a share of its size (default 0 = still, e.g. 0.05 for a ±5% beat)
 //   hop        set false to skip the tap-triggered hop
 //   hopSound   sound to play with the hop (names are in sound.js)
 //   reactions  built-in clips to play on tap, each with the sound that goes with it. They come

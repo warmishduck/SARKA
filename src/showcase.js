@@ -598,7 +598,7 @@ export const createShowcase = ({
       dust.forEach((puff) => puff && puff.update(dt))
 
       groups.forEach((group, i) => {
-        const {spinSpeed = 0, phase = 0, hover = 0.08, bob = 0.05, pulse = 0.05} = items[i]
+        const {spinSpeed = 0, phase = 0, hover = 0.08, bob = 0.05, pulse = 0} = items[i]
 
         group.rotation.y += dt * spinSpeed
 
@@ -615,9 +615,10 @@ export const createShowcase = ({
 
         group.position.y = hover + Math.sin(t * 1.5 + phase) * bob + hopOffset
 
-        // Subtle "heartbeat" scale pulse at BPM, offset per item so they don't beat in unison.
+        // "Heartbeat" scale pulse at BPM, offset per item so they don't beat in unison. Off unless a
+        // creature sets `pulse` (a share of its size).
         const beat = t * (BPM / 60) * Math.PI * 2 + phase
-        group.scale.setScalar(1 + Math.sin(beat) * pulse)  // ±5% breathing by default
+        group.scale.setScalar(1 + Math.sin(beat) * pulse)
       })
     },
   }
