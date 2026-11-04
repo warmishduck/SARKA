@@ -79,6 +79,16 @@ const STENCIL_INTERVAL_MS = 500
  */
 const STENCIL_HOLD_MS = 2500
 /**
+ * ML mode: the classifier's square round a tall, narrow outline is about three times wider than
+ * the object, so it also matched with the object well off to one side, and on the phone the
+ * occluder then stood a radius or more beside it. A second, narrow square round the outline's
+ * middle (this share of its width) has to match too, in turn with the wide one.
+ * The threshold is lower: that square sees only part of the object.
+ */
+const CENTRE_CROP = 1.4
+// AUKI: a guess, not measured on the phone yet; check with ?debug (`ml centre`).
+const CENTRE_THRESHOLD = 0.6
+/**
  * ML mode, a box on a wall: the box's distance is read from the tracked points within this angle
  * (radians, about 6°) of the ray to its middle; a box a step away spans about that much.
  */
@@ -299,6 +309,8 @@ const scanPipelineModule = () => {
     const fitHint = exhibit.imageTarget ? TEXT.scanFitObject : TEXT.scanFitObjectStart
     hint.setText(fitHint)
     debug?.set('stencil', `drawn for ${shape.distance.toFixed(1)} m, foot at y=${shape.footY.toFixed(0)} px`)
+    const centre = onWall ? null : centreSquare(shape)
+    const regionHits = centre ? [false, false] : [false]   // the latest answer for each square
     let holdSince = null          // when the object has been in the outline since, steadily
     let holdPosition = null
     let holdDirection = null
@@ -306,7 +318,13 @@ const scanPipelineModule = () => {
     const onFrame = (best, ms) => {
       debug?.set('ml frame', `${best.className} ${(best.probability * 100).toFixed(0)}% (${best.crop}), ${ms.toFixed(0)} ms`)
       if (state !== 'found') return
-      const hit = best.className === exhibit.mlTarget && best.probability >= STENCIL_THRESHOLD
+      const region = best.crop === 'region 1' ? 1 : 0
+      regionHits[region] = best.className === exhibit.mlTarget &&
+        best.probability >= (region === 1 ? CENTRE_THRESHOLD : STENCIL_THRESHOLD)
+      if (region === 1) {
+        debug?.set('ml centre', `${best.className} ${(best.probability * 100).toFixed(0)}%`)
+      }
+      const hit = regionHits.every(Boolean)
       const direction = camera.getWorldDirection(new THREE.Vector3())
       const steady = holdSince !== null &&
         camera.position.distanceTo(holdPosition) <= STENCIL_STEADY_MOVE &&
@@ -319,8 +337,9 @@ const scanPipelineModule = () => {
       }
       stencil?.setMatched(hit && holdSince !== null)
       if (!hit) {
-        hint.setText(fitHint)
-        debug?.set('hold', 'object not in the outline')
+        const offCentre = centre && regionHits[0] && !regionHits[1]
+        hint.setText(offCentre ? TEXT.scanCentreObject : fitHint)
+        debug?.set('hold', offCentre ? 'object in the outline, but not in its middle' : 'object not in the outline')
         return
       }
       const held = performance.now() - holdSince
@@ -333,8 +352,25 @@ const scanPipelineModule = () => {
       }
     }
     mlDetectorStop = startDetection(renderer.domElement, () => {}, {
-      onFrame, threshold: STENCIL_THRESHOLD, intervalMs: STENCIL_INTERVAL_MS, screenRegion: shape.crop, showInput: !!debug,
+      onFrame, threshold: STENCIL_THRESHOLD, intervalMs: STENCIL_INTERVAL_MS,
+      screenRegion: centre ? [shape.crop, centre] : shape.crop, showInput: !!debug,
     })
+  }
+
+  /**
+   * ML mode: the narrow square round the outline's middle (see CENTRE_CROP).
+   *
+   * @param {import('./stencil.js').StencilShape} shape
+   * @returns {{x: number, y: number, size: number} | null} CSS px relative to the canvas; null when
+   *   the object already fills most of the wide square, so off to one side it would not match.
+   */
+  const centreSquare = (shape) => {
+    const size = shape.width * CENTRE_CROP
+    if (size >= shape.crop.size * 0.8) {
+      return null
+    }
+    const middle = (shape.topY + shape.bottomY) / 2
+    return {x: shape.centreX - size / 2, y: middle - size / 2, size}
   }
 
   const removeStencil = () => {

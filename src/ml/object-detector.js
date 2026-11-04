@@ -121,9 +121,11 @@ const classifyFrame = (source, crop) => {
  * @param {(className: string, confidence: number) => void} onDetect
  * @param {{intervalMs?: number, threshold?: number, backgroundClass?: string,
  *   onFrame?: (best: {className: string, probability: number, crop: number | string}, ms: number) => void,
- *   screenRegion?: {x: number, y: number, size: number}, showInput?: boolean}} options -
+ *   screenRegion?: {x: number, y: number, size: number} | {x: number, y: number, size: number}[],
+ *   showInput?: boolean}} options -
  *   `onFrame` hears every tick's best guess, which square it was (`crop`, 0 at the top, or
- *   'region') and how long the worker took. `screenRegion` is CSS px relative to `glCanvas`.
+ *   'region'; 'region 0', 'region 1', … with several) and how long the worker took.
+ *   `screenRegion` is CSS px relative to `glCanvas`: one square, or several taken in turn.
  *   `showInput` shows what the classifier is given, small, in a corner (for ?debug).
  * @returns {() => void} stop
  */
@@ -138,6 +140,7 @@ export const startDetection = (glCanvas, onDetect, {
   if (!isReady) throw new Error('Call loadModel() first')
   let active = true
   let ticks = 0
+  const regions = screenRegion ? [screenRegion].flat() : null
   if (showInput) {
     offscreen.className = 'ml-input-preview'
     document.body.appendChild(offscreen)
@@ -150,15 +153,17 @@ export const startDetection = (glCanvas, onDetect, {
       // live frame rather than reading a WebGL canvas that may have an empty drawing buffer.
       const source = document.querySelector('video') ?? glCanvas
       // The middle first: that is where a visitor usually holds what they point at.
-      const crop = screenRegion
+      const regionIndex = regions ? ticks++ % regions.length : null
+      const crop = regions
         ? frameSquare({width: source.videoWidth || source.width, height: source.videoHeight || source.height},
-          glCanvas.getBoundingClientRect(), screenRegion)
+          glCanvas.getBoundingClientRect(), regions[regionIndex])
         : (Math.floor(CROPS / 2) + ticks++) % CROPS
       const result = await classifyFrame(source, crop)
       if (active && result) {
+        const label = regions && regions.length > 1 ? `region ${regionIndex}` : 'region'
         const best = {
           ...result.scores[0].reduce((a, b) => a.probability > b.probability ? a : b),
-          crop: screenRegion ? 'region' : crop,
+          crop: regions ? label : crop,
         }
         onFrame?.(best, result.ms)
         if (best.className !== backgroundClass && best.probability >= threshold) {
