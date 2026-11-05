@@ -74,7 +74,7 @@ export const EXHIBITS = {
   '02': {creatures: [alone('pinecone')], imageTarget: '02'},
   '03': {creatures: [alone('glowcap')], game: 'light_the_way', imageTarget: '03'},
   // Office test objects: an abstract painting, a cats painting and a wooden wall clock.
-  'office-painting': {creatures: [alone('pinecone')], imageTarget: 'abstract-painting'},
+  'office-painting': {creatures: [alone('ghost')], imageTarget: 'abstract-painting'},
   'office-cats': {creatures: [alone('ghost')], imageTarget: 'cats-painting'},
   'office-clock': {creatures: [alone('acorn')], imageTarget: 'wood-clock'},
   // ML recognition test: cats painting → ML model detects the physical object from any angle.
