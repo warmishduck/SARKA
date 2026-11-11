@@ -46,6 +46,8 @@ import {CREATURES} from './creatures.js'
  * @property {'wall'} [mount] - 'wall': the mlTarget object is a box hanging on a wall, and objectSize
  *   is {width, height, depth} in metres (its front face, and how far it sticks out); the creature
  *   comes up from behind its top edge and sits on it. Without mount it stands on the floor.
+ * @property {'floor'} [seat] - With mount 'wall': the creature drops from the box to the floor in
+ *   front of it instead of sitting on its top. It must be shorter than the box, or it shows at the start.
  *   An ML exhibit without imageTarget opens straight into the stencil, without a poster.
  * @property {string} [modelUrl] - The Teachable Machine model this exhibit's mlTarget is a class of,
  *   when it is not the shared one in src/ml/model-config.js.
@@ -91,7 +93,8 @@ export const EXHIBITS = {
   // An electrical panel on a wall, no poster. Measured: the grey box 36.5 cm wide, 42 cm from its
   // top to the black box's bottom, sticking out 16 cm from the wall.
   'test-panel': {
-    creatures: [at('pinecone', 0, 0, GROUNDED)], mlTarget: 'electrical-panel', mount: 'wall',
+    // The ghost, small enough to hide behind the box (0.42 m), drops from it to the floor in front.
+    creatures: [at('ghost', 0, 0, {...GROUNDED, targetHeight: 1.0})], mlTarget: 'electrical-panel', mount: 'wall', seat: 'floor',
     objectSize: {width: 0.365, height: 0.42, depth: 0.16},
     // Trained on frames of a video of the panel and on background cut from the same frames.
     modelUrl: 'https://teachablemachine.withgoogle.com/models/uvKjSD9UM/',

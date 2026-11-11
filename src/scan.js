@@ -31,7 +31,7 @@ import {FLOOR_PITCH, floorHeight, floorSpot, localFloorHeight, median, wallDista
 import {
   MARKER_SEARCH_ANGLE, MIN_MARKER_POINTS, contentScale, emergeStart, markerPosition, wallPlane, yawToward,
 } from './marker-anchor'
-import {fitCylinderCentre, sitOnWallBox, walkAroundObject} from './object-path'
+import {dropToFloor, fitCylinderCentre, sitOnWallBox, walkAroundObject} from './object-path'
 import {boxStencilShape, createStencil, footDistanceAt, stencilShape} from './stencil'
 import {createDebugPanel} from './debug-panel'
 import {initScenePipelineModule, placeCameraAtStart} from './threejs-scene-init'
@@ -46,6 +46,8 @@ const FLOOR_MARKER = 'floor-marker'
 const MARKER_SCALE = 0.6       // content scale when the marker reports no width (see contentScale)
 const OBJECT_GAP = 0.30        // object mode: how far in front of the object's near face the creature stands
 const OBJECT_EMERGE_SIDE = 0.55 // emerge-from-side offset in metres (right of anchor)
+// AUKI: a guess. A box on a wall, exhibit.seat 'floor': how far in front of its face the creature lands, in metres.
+const WALL_FLOOR_GAP = 0.5
 // ML mode: a tap further along the floor than this (scene units) is taken to have missed it.
 const OBJECT_MAX_DIST = 4
 const OBJECT_SCALE_FALLBACK = 0.5
@@ -442,7 +444,10 @@ const scanPipelineModule = () => {
     const top = screenRay(view.left + shape.centreX, view.top + shape.topY)
     const scale = OBJECT_SCALE_FALLBACK * upm / DEFAULT_UNITS_PER_METRE
     const size = {width: metres.width * upm, height: metres.height * upm, depth: metres.depth * upm}
-    const sit = sitOnWallBox(middle.origin, middle.direction, top.direction, faceDistance, size, tallestCreature(exhibit) * scale)
+    let sit = sitOnWallBox(middle.origin, middle.direction, top.direction, faceDistance, size, tallestCreature(exhibit) * scale)
+    if (sit && exhibit.seat === 'floor') {
+      sit = dropToFloor(sit, size.height, size.depth, currentFloorY(), WALL_FLOOR_GAP * upm, tallestCreature(exhibit) * scale)
+    }
     debug?.set('units per metre', `${upm.toFixed(2)} (${distance > 0 ? `wall box, ${faceDistance.toFixed(2)} away` : 'no points on the box: guessed'})`)
     if (!sit) {
       debug?.set('wall box', 'the top ray missed the face: try again')

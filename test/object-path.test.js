@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 
-import {END_ANGLE, MIN_FIT_POINTS, fitCylinderCentre, sitOnWallBox, walkAroundObject} from '../src/object-path.js'
+import {END_ANGLE, MIN_FIT_POINTS, dropToFloor, fitCylinderCentre, sitOnWallBox, walkAroundObject} from '../src/object-path.js'
 
 let failures = 0
 const check = (name, ok, detail = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? '  — ' + detail : ''}`); if (!ok) failures++ }
@@ -84,6 +84,17 @@ check('the box\'s middle is half its height below the top', sit && near(sit.boxC
 check('it comes up from inside the box, below the seat', sit && near(sit.emergeFrom.y, 1.07, 1e-6) && near(sit.emergeFrom.z, sit.seat.z))
 check('it faces the camera', sit && Math.abs(sit.yaw - Math.atan2(0.1, 1.3)) < 0.02, sit?.yaw.toFixed(3))
 check('a top ray that points away: no seat', sitOnWallBox(cam, dirTo(faceMid), new THREE.Vector3(0, 0, 1), cam.distanceTo(faceMid), {height: 0.34, depth: 0.12}, 0.3) === null)
+
+const drop = sit && dropToFloor(sit, 0.34, 0.12, 0.05, 0.3)
+check('dropToFloor: it lands on the floor', drop && near(drop.seat.y, 0.05))
+check('dropToFloor: it lands in front of the face, towards the camera',
+  drop && near(drop.seat.clone().sub(sit.boxCentre).setY(0).length(), 0.12 / 2 + 0.3, 1e-6) && drop.seat.z > sit.boxCentre.z)
+check('dropToFloor: it starts inside the box, feet at its bottom, hidden by the box',
+  drop && near(drop.emergeFrom.y, sit.boxCentre.y - 0.17) && near(drop.emergeFrom.x, sit.boxCentre.x) && near(drop.emergeFrom.z, sit.boxCentre.z))
+const thick = dropToFloor(sit, 0.34, 0.12, 0.05, 0.3, 0.5)
+check('dropToFloor: a thick creature starts further back, into the wall',
+  near(thick.emergeFrom.z, sit.boxCentre.z - (0.5 * 0.4 - 0.06) * Math.cos(sit.yaw), 1e-6) && thick.emergeFrom.z < drop.emergeFrom.z)
+check('dropToFloor: the facing and the box are kept', drop && drop.yaw === sit.yaw && drop.boxCentre.equals(sit.boxCentre))
 
 console.log(failures === 0 ? '\nALL OBJECT PATH CHECKS PASSED' : `\n${failures} CHECK(S) FAILED`)
 process.exit(failures ? 1 : 0)

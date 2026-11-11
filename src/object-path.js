@@ -171,3 +171,28 @@ export const sitOnWallBox = (cameraPosition, middleDirection, topDirection, dist
   const emergeFrom = seat.clone().setY(seat.y - rise)
   return {boxCentre, seat, emergeFrom, yaw: Math.atan2(toCamera.x, toCamera.z)}
 }
+
+/**
+ * The same box on a wall, but the creature ends on the floor in front of it instead of on its top:
+ * it starts inside the box, with its feet at the box's bottom, and drops from there to the floor.
+ *
+ * @param {WallBoxSeat} box - From sitOnWallBox.
+ * @param {number} height - The box's, scene units.
+ * @param {number} depth - How far the box sticks out from the wall, scene units.
+ * @param {number} floorY - Where the floor is, world y.
+ * @param {number} gap - How far in front of the box's face it lands, scene units.
+ * @param {number} creatureHeight - Scene units. A creature has some thickness (a sheet bulges
+ *   about this share of its height to the front), so its start is moved back into the wall until
+ *   its front is behind the box's face, or it would show in front of the box at the start.
+ * @returns {WallBoxSeat} `seat` is on the floor, `emergeFrom` at the box's bottom (moved back), the rest as given.
+ */
+export const dropToFloor = (box, height, depth, floorY, gap, creatureHeight = 0) => {
+  const toCamera = new THREE.Vector3(Math.sin(box.yaw), 0, Math.cos(box.yaw))
+  const seat = box.boxCentre.clone().addScaledVector(toCamera, depth / 2 + gap).setY(floorY)
+  const back = Math.max(0, creatureHeight * CREATURE_FRONT_BULGE - depth / 2)
+  const emergeFrom = box.boxCentre.clone().addScaledVector(toCamera, -back).setY(box.boxCentre.y - height / 2)
+  return {...box, seat, emergeFrom}
+}
+
+/** How far a creature reaches to the front of where it stands, as a share of its height (the ghost: ~0.4). */
+const CREATURE_FRONT_BULGE = 0.4
