@@ -90,6 +90,8 @@ export const EXHIBITS = {
     creatures: [at('glowcap', 0, 0, GROUNDED)], imageTarget: 'cats-painting', mlTarget: 'vacuum-station',
     objectSize: {radius: 0.17, height: 0.4}, posterWidth: 0.36,
   },
+  // The granny (a Mixamo-rigged test model), on the cats painting like the ghost: /?scan&c=test-granny
+  'test-granny': {creatures: [alone('granny', GROUNDED)], imageTarget: 'cats-painting'},
   // An electrical panel on a wall, no poster. Measured: the grey box 36.5 cm wide, 42 cm from its
   // top to the black box's bottom, sticking out 16 cm from the wall.
   'test-panel': {

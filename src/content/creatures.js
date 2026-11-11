@@ -60,5 +60,8 @@ export const CREATURES = {
   // Test model from the artist (no clips, no rig): floats and bobs like the others.
   // The eyes on its sheet look the model's -z way (its back), so it is turned round to face the visitor.
   // Its clips are baked cloth (shape keys): Idle sways, Fly streams back while it moves out.
+  // Test model from the artist, rigged by Mixamo (65 bones) with its Thriller Idle clip, named Idle.
+  // It faces +z (the Mixamo rig's front), so no yaw; its height is measured from the posed vertices.
+  granny: {file: 'Granny.glb', targetHeight: 0.5, phase: 0, hover: 0, bob: 0, hop: false},
   ghost: {file: 'AnotherGhost.glb', targetHeight: 0.5, phase: 0, yaw: Math.PI, hop: false, walkAnim: 'Fly'},
 }

@@ -60,9 +60,9 @@ check('an exhibit code wins over scan', route('?scan&c=03').kind === 'exhibit')
 // ---------------------------------------------------------------- picking an exhibit from a recognised object
 check('a known image target opens its exhibit', routeFromImageTarget('abstract-painting')?.code === 'office-painting')
 check('an unknown image target opens nothing', routeFromImageTarget('nope') === null && routeFromImageTarget(undefined) === null)
-// ML exhibits are opened by code (/?scan&c=test-purifier), so they may share a poster with another.
-check('image target names are unique across exhibits (ML exhibits aside)', (() => {
-  const names = Object.values(EXHIBITS).filter((e) => !e.mlTarget).map((e) => e.imageTarget).filter(Boolean)
+// ML exhibits and the test-* ones are opened by code (/?scan&c=test-purifier), so they may share a poster with another.
+check('image target names are unique across exhibits (ML and test-* exhibits aside)', (() => {
+  const names = Object.entries(EXHIBITS).filter(([code, e]) => !e.mlTarget && !code.startsWith('test-')).map(([, e]) => e.imageTarget).filter(Boolean)
   return new Set(names).size === names.length
 })())
 check('a poster shared with ML exhibits still opens the plain one', routeFromImageTarget('cats-painting')?.code === 'office-cats')
