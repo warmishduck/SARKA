@@ -292,7 +292,8 @@ export const initScenePipelineModule = (exhibit, {anchor = null, puzzlesEnabled 
         onAction: () => level && level.pressAction(),
         onGesture: resumeAudio,
         showModeButton: hasCreatures && hasGame,   // with only one of them there is nothing to switch to
-        creaturesHint: hidesBehindWall ? 'hintWall' : 'hintCreatures',
+        // A creature that lands on the floor below a wall box ends out of frame when the phone faces the wall.
+        creaturesHint: exhibit.seat === 'floor' ? 'hintFloor' : hidesBehindWall ? 'hintWall' : 'hintCreatures',
       })
       ui.setLoading(0, exhibit.creatures.length)
 

@@ -48,6 +48,7 @@ import {CREATURES} from './creatures.js'
  *   comes up from behind its top edge and sits on it. Without mount it stands on the floor.
  * @property {'floor'} [seat] - With mount 'wall': the creature drops from the box to the floor in
  *   front of it instead of sitting on its top. It must be shorter than the box, or it shows at the start.
+ *   It lands below the phone's view, so the in-AR hint asks the visitor to look at the floor.
  *   An ML exhibit without imageTarget opens straight into the stencil, without a poster.
  * @property {string} [modelUrl] - The Teachable Machine model this exhibit's mlTarget is a class of,
  *   when it is not the shared one in src/ml/model-config.js.
