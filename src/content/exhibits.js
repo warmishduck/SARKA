@@ -57,6 +57,16 @@ import {CREATURES} from './creatures.js'
 // facing the way it goes and stays on the floor.
 const GROUNDED = {hover: 0, bob: 0, spinSpeed: 0, pulse: 0}
 
+// An electrical panel on a wall, recognised without a poster. Measured: the grey box 36.5 cm wide,
+// 42 cm from its top to the black box's bottom, sticking out 16 cm from the wall. The creature, small
+// enough to hide behind the box (0.42 m), drops from it to the floor in front.
+const PANEL = {
+  mlTarget: 'electrical-panel', mount: 'wall', seat: 'floor',
+  objectSize: {width: 0.365, height: 0.42, depth: 0.16},
+  // Trained on frames of a video of the panel and on background cut from the same frames.
+  modelUrl: 'https://teachablemachine.withgoogle.com/models/uvKjSD9UM/',
+}
+
 const at = (id, x = 0, z = -0.2, extra = {}) => ({id, x, z, ...extra})
 
 // A creature shown on its own (most real exhibits, one QR each), 3x its usual size: without the
@@ -92,15 +102,12 @@ export const EXHIBITS = {
   },
   // The granny (a Mixamo-rigged test model), on the cats painting like the ghost: /?scan&c=test-granny
   'test-granny': {creatures: [alone('granny', GROUNDED)], imageTarget: 'cats-painting'},
-  // An electrical panel on a wall, no poster. Measured: the grey box 36.5 cm wide, 42 cm from its
-  // top to the black box's bottom, sticking out 16 cm from the wall.
-  'test-panel': {
-    // The ghost, small enough to hide behind the box (0.42 m), drops from it to the floor in front.
-    creatures: [at('ghost', 0, 0, {...GROUNDED, targetHeight: 1.0})], mlTarget: 'electrical-panel', mount: 'wall', seat: 'floor',
-    objectSize: {width: 0.365, height: 0.42, depth: 0.16},
-    // Trained on frames of a video of the panel and on background cut from the same frames.
-    modelUrl: 'https://teachablemachine.withgoogle.com/models/uvKjSD9UM/',
-  },
+  // The same granny on the abstract painting, the only painting in Jussi's office: /?scan&c=test-granny-office
+  'test-granny-office': {creatures: [alone('granny', GROUNDED)], imageTarget: 'abstract-painting'},
+  // The ghost and the granny at the electrical panel, one link each: /?scan&c=test-panel and
+  // /?scan&c=test-panel-granny. They do not fit side by side behind the 36 cm box (the ghost alone is 24 cm wide).
+  'test-panel': {creatures: [at('ghost', 0, 0, {...GROUNDED, targetHeight: 1.0})], ...PANEL},
+  'test-panel-granny': {creatures: [at('granny', 0, 0, {...GROUNDED, targetHeight: 1.0})], ...PANEL},
   // The whole demo: all the creatures, and the game a button away.
   demo: {creatures: TOGETHER, game: 'light_the_way'},
   // The yard game, open whenever the museum is closed: no creatures, straight into the game.
