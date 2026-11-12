@@ -63,6 +63,12 @@ const PANEL = {
   modelUrl: 'https://teachablemachine.withgoogle.com/models/uvKjSD9UM/',
 }
 
+// An air purifier, found after the cats painting poster: a 26 x 49 cm cylinder. The creature walks round it.
+const PURIFIER = {
+  imageTarget: 'cats-painting', mlTarget: 'air-purifier',
+  objectSize: {radius: 0.13, height: 0.49}, posterWidth: 0.36,
+}
+
 const at = (id, x = 0, z = -0.2, extra = {}) => ({id, x, z, ...extra})
 
 // A creature shown on its own (most real exhibits, one QR each), 3x its usual size: without the
@@ -76,10 +82,9 @@ export const EXHIBITS = {
   'office-cats': {creatures: [alone('ghost')], imageTarget: 'cats-painting'},
   // ML recognition test: cats painting → ML model detects the physical object from any angle.
   // The cats painting is 50 x 40 cm; its image target crop is about 48 x 36 cm.
-  'test-purifier': {
-    creatures: [at('ghost', 0, 0, {...GROUNDED, targetHeight: 1.6})], imageTarget: 'cats-painting', mlTarget: 'air-purifier',
-    objectSize: {radius: 0.13, height: 0.49}, posterWidth: 0.36,
-  },
+  'test-purifier': {creatures: [at('ghost', 0, 0, {...GROUNDED, targetHeight: 1.6})], ...PURIFIER},
+  // The granny round the same purifier: /?scan&c=test-purifier-granny
+  'test-purifier-granny': {creatures: [at('granny', 0, 0, {...GROUNDED, targetHeight: 1.6})], ...PURIFIER},
   // The granny (a Mixamo-rigged test model), on the cats painting like the ghost: /?scan&c=test-granny
   'test-granny': {creatures: [alone('granny', GROUNDED)], imageTarget: 'cats-painting'},
   // The same granny on the abstract painting, the only painting in Jussi's office: /?scan&c=test-granny-office
