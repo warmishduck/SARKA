@@ -1,15 +1,9 @@
 // Define an 8th Wall XR Camera Pipeline Module that puts one exhibit's content into a threejs
 // scene on startup (which exhibit comes from the page's address, see route.js and
-// content/exhibits.js). An exhibit has creatures, a mini-game, or both, and this has two modes:
-//  - creatures: tapping a creature makes it react, each in its own way (see showcase.js);
-//  - level: a small diorama of a level from the game, which you play with on-screen buttons
-//    (see level.js). It is a button away, or the only thing there when the exhibit has no
-//    creatures.
+// content/exhibits.js). Tapping a creature makes it react, each in its own way (see showcase.js).
 import * as THREE from 'three';
 
 import {CREATURES} from './content/creatures.js'
-import {GAMES} from './content/games.js'
-import {createLevel} from './level'
 import {addLights, addShadowFloor} from './lights'
 import {createShowcase} from './showcase'
 import {isMuted, playSound, resumeAudio, setMuted} from './sound'
@@ -61,24 +55,13 @@ export const placeCameraAtStart = (camera) => {
 export const initScenePipelineModule = (exhibit, {anchor = null, puzzlesEnabled = true, emergeFrom = null} = {}) => {
   const clock = new THREE.Clock()
 
-  const hasCreatures = exhibit.creatures.length > 0
   // Placed by the scanner, a creature still behind its puzzle hides behind a stone wall instead of
   // standing as a silhouette (see showcase.js's lockStyle).
   const lockStyle = anchor ? 'wall' : 'silhouette'
   const hidesBehindWall = lockStyle === 'wall' && puzzlesEnabled &&
     exhibit.creatures.some((placement) => ({...CREATURES[placement.id], ...placement}).puzzle)
-  // What plays, if anything (content/games.js turns an id like 'light_the_way' into the level
-  // data an actual game reads). Only one `type` exists yet ('platformer', run by level.js); a
-  // second kind of game would be started here too, picked by `game.type`, alongside this one.
-  const game = exhibit.game ? GAMES[exhibit.game] : null
-  const hasGame = !!game
-
-  // The creature showcase and the level diorama, created in initXrScene (the level only when the
-  // exhibit has a game); and which of the two modes is showing.
+  // The creature showcase, created in initXrScene.
   let showcase = null
-  let level = null
-  let mode = hasCreatures && exhibit.startIn !== 'game' ? 'creatures' : 'level'
-  let showingLevelLoading = false   // the "loading the level" note is up
 
   // What anchors the content: the stage group everything stands in, where it is heading, and
   // (until it has arrived) the walk it makes from behind the wall.
@@ -132,14 +115,14 @@ export const initScenePipelineModule = (exhibit, {anchor = null, puzzlesEnabled 
   // is in, it shows the "tap a creature" hint, which goes away on the first tap (or after a while).
   const modelProgress = (done, total) => {
     ui.setLoading(done, total)
-    if (done === total && total > 0 && mode === 'creatures') {
+    if (done === total && total > 0) {
       showHint()
     }
   }
 
   // Populates the scene and sets the initial camera position.
   const initXrScene = ({scene, camera, renderer}) => {
-    // The level diorama is a box: anything outside it is clipped away.
+    // The stone wall sinks into the floor behind a clipping plane (stone-wall.js).
     renderer.localClippingEnabled = true
 
     // Everything the exhibit shows lives in `stage`, so an anchor moves it all at once.
@@ -157,22 +140,6 @@ export const initScenePipelineModule = (exhibit, {anchor = null, puzzlesEnabled 
 
     showcase = createShowcase({placements: exhibit.creatures, glowLight, onProgress: modelProgress, puzzlesEnabled, lockStyle})
     showcase.load(stage)
-
-    // The level diorama. Hidden (and not even loaded) until it is shown.
-    if (hasGame) {
-      level = createLevel({
-        glowLight,
-        data: game.data,
-        onEvent: (name) => {
-          if (name === 'won') {
-            ui.notice(ui.text.won, 3500)
-          } else if (name === 'branchLost') {
-            ui.notice(ui.text.branchLost, 3000)
-          }
-        },
-      })
-      stage.add(level.root)
-    }
 
     // The scanner's floor is only estimated, and a shadow on a wrong floor gives that away.
     if (!anchor) {
@@ -232,30 +199,6 @@ export const initScenePipelineModule = (exhibit, {anchor = null, puzzlesEnabled 
     showcase.tap(index)
   }
 
-  // Switches between the creature showcase and the level diorama.
-  const setMode = (next) => {
-    mode = next
-    const inLevel = next === 'level'
-    showcase.setActive(!inLevel)
-    if (inLevel) {
-      level.ensureLoaded()   // the first time this loads the level's models
-      if (!level.isReady()) {
-        showingLevelLoading = true
-        ui.notice(ui.text.loadingLevel, 20000)   // taken down as soon as it is ready (see onUpdate)
-      }
-    }
-    if (!inLevel) {
-      showingLevelLoading = false
-      ui.hideNotice()
-      ui.setAction(null)
-    }
-    if (level) {
-      level.setActive(inLevel)
-    }
-    ui.setMode(next)
-    showHint()
-  }
-
   // Takes a photo of the camera feed with the characters in it and shows it to share or save.
   const takePhoto = () => {
     resumeAudio()
@@ -288,19 +231,13 @@ export const initScenePipelineModule = (exhibit, {anchor = null, puzzlesEnabled 
           return isMuted()
         },
         onPhoto: canTakePhoto ? takePhoto : null,
-        onToggleMode: () => setMode(mode === 'creatures' ? 'level' : 'creatures'),
-        onAction: () => level && level.pressAction(),
         onGesture: resumeAudio,
-        showModeButton: hasCreatures && hasGame,   // with only one of them there is nothing to switch to
         // A creature that lands on the floor below a wall box ends out of frame when the phone faces the wall.
         creaturesHint: exhibit.seat === 'floor' ? 'hintFloor' : hidesBehindWall ? 'hintWall' : 'hintCreatures',
       })
       ui.setLoading(0, exhibit.creatures.length)
 
       initXrScene({scene, camera, renderer})  // Add objects and set the starting camera.
-      if (mode === 'level') {
-        setMode('level')   // an exhibit that opens straight into its game
-      }
 
       // Prevent scroll/pinch gestures on the canvas.
       canvas.addEventListener('touchmove', (event) => {
@@ -311,23 +248,13 @@ export const initScenePipelineModule = (exhibit, {anchor = null, puzzlesEnabled 
       // scheduled by then; this releases them.
       canvas.addEventListener('touchend', resumeAudio)
 
-      // Tap a character to make it react (in the level: tap the ground to send the Glowcap
-      // there, or the Glowcap to call it to the acorn); tap empty space to recenter content
-      // instead.
+      // Tap a character to make it react; tap empty space to recenter content instead.
       canvas.addEventListener(
         'touchstart', (e) => {
           if (e.touches.length !== 1) {
             return
           }
           aimRaycaster(e.touches[0], canvas, camera)
-          if (mode === 'level') {
-            if (level.tap(raycaster)) {
-              ui.hideHint()
-            } else {
-              onEmptyTap()
-            }
-            return
-          }
           const hitIndex = showcase.hitTest(raycaster)
           if (hitIndex !== -1) {
             onTap(hitIndex)
@@ -338,21 +265,10 @@ export const initScenePipelineModule = (exhibit, {anchor = null, puzzlesEnabled 
       )
     },
 
-    // onUpdate is called once per frame. In the level mode the level runs itself; in the
-    // creature mode the showcase animates the creatures.
+    // onUpdate is called once per frame: the showcase animates the creatures.
     onUpdate: () => {
       const dt = clock.getDelta()       // seconds since last frame (framerate-independent)
       const t = clock.getElapsedTime()  // total seconds since start
-
-      if (mode === 'level') {
-        if (showingLevelLoading && level.isReady()) {
-          showingLevelLoading = false
-          ui.hideNotice()
-        }
-        level.update(dt, t, ui.getInput())
-        ui.setAction(level.action())   // the anchor's button shows only while the acorn stands at it
-        return
-      }
 
       updateAnchor(dt)
       showcase.update(dt, t)

@@ -1,5 +1,4 @@
-// Helpers for placing rigged (skinned, animated) glTF characters. Shared by the creature
-// showcase and the level diorama.
+// Helpers for placing rigged (skinned, animated) glTF characters, used by the creature showcase.
 import * as THREE from 'three'
 
 // Measures a model so it can be scaled and placed and, if it ships an animation clip,
@@ -26,8 +25,8 @@ export const measureModel = (model, clip) => {
 // keep its vertical motion: that IS the jump, the crouch and the bend.
 //
 // `pinVerticallyIn` lists clips whose vertical root motion should go too, pinned to the
-// idle's height. Use it when code moves the character (the level diorama: physics decides
-// how high it is, so the clip must not add its own leap on top).
+// idle's height. Use it when code moves the character and decides how high it is itself,
+// so the clip must not add its own leap on top.
 //
 // Must run before the model is scaled or moved, so "model space" here is the model's own
 // Y-up space.

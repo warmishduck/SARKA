@@ -92,7 +92,7 @@ export const createShowcase = ({
   let finished = 0    // how many models have loaded (or failed to)
   let carried = false // the anchor is carrying the creatures along (setMoving)
   let now = 0         // the time of the latest update(), which taps are stamped with
-  let active = true   // false while something else (the level) has the stage
+  let active = true   // false while something else has the stage
 
   // Swaps every mesh's material for a dark, semi-transparent stand-in, keeping the originals to
   // put back on unlock() — a locked creature is a silhouette, not the real thing.
@@ -442,7 +442,7 @@ export const createShowcase = ({
       items.forEach((_, i) => applyCarried(i))
     },
 
-    // Shows the creatures or hides them (the level takes the stage). Either way the glows start
+    // Shows the creatures or hides them (something else takes the stage). Either way the glows start
     // from off, and coming back moves the shared light to the glowcap again.
     setActive(on) {
       active = on

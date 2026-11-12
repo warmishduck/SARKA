@@ -1,5 +1,5 @@
 // The glowcap's glow: its emissive spots get brighter while a green point light and a soft
-// halo fade in around it. Used by the creature showcase and by the level diorama.
+// halo fade in around it. Used by the creature showcase.
 import * as THREE from 'three'
 
 // A soft round blob: white in the middle, fading to nothing. Used for halos and light pools.

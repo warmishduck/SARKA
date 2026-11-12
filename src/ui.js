@@ -1,20 +1,16 @@
 // The demo's on-screen extras for the AR view, drawn as plain DOM on top of the AR canvas: a
-// loading note, a hint, a mode switch, the level's move/jump buttons, a mute button, a language
-// switch, and a photo button with a preview sheet. Styles are in index.css (the `.ui-*` rules).
+// loading note, a hint, a mute button, a language switch, and a photo button with a preview sheet. Styles are in index.css (the `.ui-*` rules).
 // The text comes from i18n.js.
 import {createLangPicker, onLangChange, TEXT} from './i18n'
 
 const make = (tag, className, props) => Object.assign(document.createElement(tag), {className}, props)
 
 // `onToggleMute()` flips the sound and returns whether it is now muted. `onPhoto` takes a
-// photo; pass null when the engine cannot (then no photo button is shown). `onToggleMode()`
-// switches between the creature showcase and the level. `onAction()` is the level's context
-// button (grow / remove the branch). `onGesture()` is called on button presses so the caller
-// can unlock audio (iOS only allows that from a real touch/click). `showModeButton` is false for
-// an exhibit that has only one of the two modes, so there is nothing to switch to.
+// photo; pass null when the engine cannot (then no photo button is shown). `onGesture()` is called
+// on button presses so the caller can unlock audio (iOS only allows that from a real touch/click).
 // `creaturesHint` is the i18n key of the hint shown with the creatures.
 export const createUi = ({
-  onToggleMute, onPhoto, onToggleMode, onAction = () => {}, onGesture = () => {}, showModeButton = true,
+  onToggleMute, onPhoto, onGesture = () => {},
   creaturesHint = 'hintCreatures',
 }) => {
   const root = make('div', 'ui')
@@ -24,12 +20,8 @@ export const createUi = ({
   const mute = make('button', 'ui-button ui-mute', {type: 'button', textContent: '🔊'})
   mute.setAttribute('aria-label', TEXT.mute)
   const langButton = createLangPicker({onInteract: onGesture})   // self-syncing badge + popup menu
-  const mode = make('button', 'ui-mode', {type: 'button', textContent: TEXT.modeToLevel})
-  mode.hidden = !showModeButton
   const flash = make('div', 'ui-flash')
-  // A button that only shows when there is something to do right here (in the level: at the anchor).
-  const action = make('button', 'ui-action', {type: 'button'})
-  root.append(loading, notice, hint, mute, langButton, mode, action, flash)
+  root.append(loading, notice, hint, mute, langButton, flash)
 
   const shutter = onPhoto ? make('button', 'ui-shutter', {type: 'button'}) : null
   if (shutter) {
@@ -37,53 +29,6 @@ export const createUi = ({
     shutter.addEventListener('click', onPhoto)
     root.append(shutter)
   }
-
-  // The level's controls: left / right on one side, jump on the other. Held buttons are read
-  // every frame through getInput(); a jump press is remembered until it is read.
-  const held = {left: false, right: false}
-  let jumpQueued = false
-  const controls = make('div', 'ui-controls')
-  const dpad = make('div', 'ui-dpad')
-  const leftButton = make('button', 'ui-control', {type: 'button', textContent: '◀'})
-  const rightButton = make('button', 'ui-control', {type: 'button', textContent: '▶'})
-  const jumpButton = make('button', 'ui-control ui-control-jump', {type: 'button', textContent: '⤒'})
-  leftButton.setAttribute('aria-label', TEXT.left)
-  rightButton.setAttribute('aria-label', TEXT.right)
-  jumpButton.setAttribute('aria-label', TEXT.jump)
-  dpad.append(leftButton, rightButton)
-  controls.append(dpad, jumpButton)
-  root.append(controls)
-
-  // Pointer events cover touch and mouse alike. Capturing the pointer means letting go
-  // outside the button, or sliding a thumb off it, still counts as a release.
-  const bindButton = (button, onDown, onUp) => {
-    button.addEventListener('pointerdown', (event) => {
-      event.preventDefault()
-      if (button.setPointerCapture) {
-        try {
-          button.setPointerCapture(event.pointerId)
-        } catch (e) {
-          // The pointer is already gone (a very quick tap); the release below still fires.
-        }
-      }
-      button.classList.add('is-down')
-      onDown()
-    })
-    const release = () => {
-      button.classList.remove('is-down')
-      onUp()
-    }
-    button.addEventListener('pointerup', () => {
-      release()
-      onGesture()
-    })
-    button.addEventListener('pointercancel', release)
-    button.addEventListener('lostpointercapture', release)
-    button.addEventListener('contextmenu', (event) => event.preventDefault())
-  }
-  bindButton(leftButton, () => { held.left = true }, () => { held.left = false })
-  bindButton(rightButton, () => { held.right = true }, () => { held.right = false })
-  bindButton(jumpButton, () => { jumpQueued = true }, () => {})
 
   // The preview sheet shown after a photo is taken.
   const sheet = make('div', 'ui-sheet')
@@ -104,8 +49,6 @@ export const createUi = ({
   // it otherwise (state that came from outside, like the loading count or the mute icon, isn't
   // ui.js's own to recompute).
   let muted = false
-  let currentMode = 'creatures'
-  let currentActionKind = null
   let lastLoading = null
 
   // Redraws every piece of static text in the current language. Called once at start and again
@@ -117,16 +60,9 @@ export const createUi = ({
     if (shutter) {
       shutter.setAttribute('aria-label', TEXT.photo)
     }
-    leftButton.setAttribute('aria-label', TEXT.left)
-    rightButton.setAttribute('aria-label', TEXT.right)
-    jumpButton.setAttribute('aria-label', TEXT.jump)
     share.textContent = TEXT.share
     close.textContent = TEXT.close
-    mode.textContent = currentMode === 'level' ? TEXT.modeToCreatures : TEXT.modeToLevel
-    hint.textContent = currentMode === 'level' ? TEXT.hintLevel : TEXT[creaturesHint]
-    if (currentActionKind !== null) {
-      action.textContent = currentActionKind === 'remove' ? TEXT.actionRemove : TEXT.actionGrow
-    }
+    hint.textContent = TEXT[creaturesHint]
     if (lastLoading) {
       loading.textContent = TEXT.loading(lastLoading.done, lastLoading.total)
     }
@@ -139,16 +75,6 @@ export const createUi = ({
   })
 
   onLangChange(refreshTexts)
-
-  mode.addEventListener('click', () => {
-    onGesture()
-    onToggleMode()
-  })
-
-  action.addEventListener('click', () => {
-    onGesture()
-    onAction()
-  })
 
   close.addEventListener('click', () => setVisible(sheet, false))
 
@@ -189,34 +115,6 @@ export const createUi = ({
     hideNotice() {
       clearTimeout(noticeTimer)
       setVisible(notice, false)
-    },
-    // Shows the context button ('grow' or 'remove') or hides it (null).
-    setAction(kind) {
-      currentActionKind = kind
-      if (kind === null) {
-        setVisible(action, false)
-        return
-      }
-      action.textContent = kind === 'remove' ? TEXT.actionRemove : TEXT.actionGrow
-      setVisible(action, true)
-    },
-    // Shows the controls that belong to a mode ('creatures' or 'level') and points the mode
-    // button at the other one.
-    setMode(name) {
-      currentMode = name
-      const inLevel = name === 'level'
-      setVisible(controls, inLevel)
-      mode.textContent = inLevel ? TEXT.modeToCreatures : TEXT.modeToLevel
-      hint.textContent = inLevel ? TEXT.hintLevel : TEXT[creaturesHint]
-      held.left = false
-      held.right = false
-      jumpQueued = false
-    },
-    // What the level's buttons say right now. The jump press is consumed by reading it.
-    getInput() {
-      const jumpPressed = jumpQueued
-      jumpQueued = false
-      return {dir: (held.right ? 1 : 0) - (held.left ? 1 : 0), jumpPressed}
     },
     flash() {
       flash.classList.remove('is-flashing')

@@ -1,56 +1,47 @@
-# Forest creatures · AR
+# Sarka AR
 
-A small WebAR demo: three rigged creatures stand on the floor in front of your phone's camera,
-and tapping them makes them react.
+A WebAR prototype for Sarka: a recognised poster, painting or object (an electrical panel, an air purifier)
+brings a creature into the room in front of your phone's camera.
 
-**Try it:** https://warmishduck.github.io/pulse-duck-ar/ — open it on a phone (on a desktop it
+**Try it:** https://warmishduck.github.io/SARKA/?scan — open it on a phone (on a desktop it
 shows a QR code, because the camera tracking needs a phone).
 
-![The three creatures](./public/preview.jpg)
+![The ghost and the granny](./public/preview.jpg)
 
 ## What's in it
 
-- **Acorn** — plays one of five animations when tapped (the first tap is always the jump), then
-  settles back into its idle loop.
-- **Pinecone** — hops when tapped.
-- **Glowcap** — tap it to make it glow; tap again to switch it off.
-- A **photo button** (camera feed plus creatures, ready to share), a **mute button**, and a
-  first-tap hint. The sound effects are synthesized in the browser, so there are no audio files.
-- A **level mode** (the button at the top left): a small diorama of a level from the game,
-  "Light the way", which is a puzzle for the two of them.
-  - You steer the **acorn** with the on-screen buttons (or the arrow keys and space bar on a
-    computer). The **Glowcap** is slow and cannot jump far; you send it somewhere by tapping the
-    ground there, and tapping the Glowcap itself calls it to the acorn. It stops at ledges.
-  - The Glowcap always glows, and the "bloom" platforms bridging the gap are solid only while it
-    is close enough to light them, so the acorn can cross only if the Glowcap is standing near
-    the bridge. Take it away and the bridge lets the acorn fall. The row of glowing platforms
-    over the start slab works the same way: jump up onto it, and it drops you when the light
-    moves off. You can stand on these platforms, but walk through their sides.
-  - The Glowcap cannot follow over the gap. At the far side is a glowing anchor: stand next to it
-    and press the button to grow a branch back across the gap, which the Glowcap can walk over.
-    The branch holds only while the acorn stays near the anchor.
-  - The level is won when the **Glowcap** reaches the green sphere; it then starts over.
+- **Ghost** — the artist's test model with a baked cloth animation (Idle sways, Fly streams back while it moves).
+- **Granny** — the artist's test model, rigged with Mixamo (its Idle clip is Mixamo's Thriller Idle).
+- A **photo button** (camera feed plus creatures, ready to share), a **mute button**, a language switch
+  (Finnish, English, Swedish) and a hint line. The sound effects are synthesized in the browser, so there are no audio files.
+- Test exhibits, set in `src/content/exhibits.js` and opened with the object scanner (`/?scan`):
+  - `/?scan` and `/?scan&c=test-granny-office`: the ghost or the granny on the abstract painting.
+  - `/?scan&c=test-panel` and `/?scan&c=test-panel-granny`: at an electrical panel on a wall, with no poster. The
+    creature comes out from behind the box and drops to the floor in front of it, below the phone's view
+    (the hint asks the visitor to look at the floor).
+  - `/?scan&c=test-purifier`: the ghost walks round an air purifier.
+- The platformer level "Light the way" (an acorn and a Glowcap) and the other placeholder creatures were taken out
+  of this project; a standalone copy of it as it was lives outside the repository.
 
 ## Exhibits and QR codes
 
 The page shows different content depending on its address, so one site serves every QR code:
 
-- `/?c=03` opens the AR view of exhibit `03`: the creatures that stand there, and a mini-game if it has one.
+- `/?c=<code>` opens the AR view of that exhibit: the creatures that stand there.
+- `/?scan` opens the object scanner (image targets, and with `c=` a chosen exhibit).
 - `/` (no code, or a code that isn't recognised) opens the **welcome page**: no camera, just a 3D
-  preview of the creatures standing together, and a line telling the visitor to scan the QR code
+  preview of the ghost and the granny standing together, and a line telling the visitor to scan the QR code
   next to an exhibit.
-- `/?c=demo` is the whole demo (all the creatures and the game), for showing people.
 
 What each code shows is set in `src/content/`, not in code, so adding an exhibit copies nothing:
 
 - `creatures.js` — the kinds of creature: which model, how tall, how it reacts to a tap.
-- `exhibits.js` — one entry per code: which creatures stand there (and where), and which game, if any.
-  `startIn: 'game'` opens straight into the game (the yard game has no creatures).
+- `exhibits.js` — one entry per code: which creatures stand there (and where), and which image target or object opens it.
 
 To add a creature, put its `.glb` in `src/assets/` and add an entry to `creatures.js`; to add an exhibit,
 add an entry to `exhibits.js`. Only the models of the exhibit being viewed are downloaded. A QR code only
-holds the code (`https://<site>/?c=03`), so what stands at an exhibit can be changed without reprinting.
-`01`, `02`, `03`, `demo` and `yard` are stand-ins for trying this out with the three creatures that exist.
+holds the code (`https://<site>/?c=<code>`), so what stands at an exhibit can be changed without reprinting.
+The exhibits there are test setups for the office, with the two creatures that exist so far.
 `npm test` checks the config (every creature has its model, every exhibit is complete, the address parsing).
 
 ## Run it locally
@@ -73,21 +64,14 @@ Pushing to `main` builds the site and publishes it to GitHub Pages
 
 - `src/app.js` — the entry point: reads the address (`src/route.js`), then starts either the welcome
   page (`src/welcome.js`) or the 8th Wall camera pipeline for that exhibit.
-- `src/threejs-scene-init.js` — the AR scene for one exhibit: the two modes (creatures / game), taps,
+- `src/threejs-scene-init.js` — the AR scene for one exhibit: taps,
   the photo button.
 - `src/showcase.js` — loads and animates a set of creatures and makes them react to taps; used by
   both the AR scene and the welcome page. `src/lights.js` is the lighting they share.
 - `src/content/` — the creatures and the exhibits (see above). `src/models.js` finds model files by name.
 - `src/i18n.js` — the languages and the language switch's state; all on-screen text lives here.
-- `src/level.js` — the level diorama: builds the platforms, the acorn, the Glowcap and the branch,
-  and scrolls a window over the level. `src/level-data.js` holds the level itself (taken from the
-  game's `light_the_way.tscn`).
-- `src/platformer.js` — the platformer physics, with no three.js in it. It uses the numbers from the
-  game's scripts (gravity, jump, speed, coyote time; the Glowcap's slow walk and 0.3 hop) so the
-  characters feel the same. `src/branch.js` is the branch's curve and the slope that is walked on.
-  `npm test` checks all of it against the level's rules.
-- `src/rig.js`, `src/glow.js` — helpers shared by both modes: placing rigged characters, and the glow.
-- `src/ui.js`, `src/index.css` — the AR view's loading note, hints, mode switch, the level's buttons,
+- `src/rig.js`, `src/glow.js` — helpers: placing rigged characters, and the glow.
+- `src/ui.js`, `src/index.css` — the AR view's loading note, hints,
   mute, language switch and photo.
 - `src/sound.js` — the synthesized sound effects.
 - `src/assets/` — the `.glb` models. Keep them small: they are downloaded by every visitor.
@@ -117,4 +101,4 @@ with patchy Wi-Fi: once the engine scripts, about 7 MB, are cached, it keeps wor
   packages in `package.json` and run `npm install`. The licence text ships with each package, as
   `node_modules/@8thwall/<package>/dist/LICENSE`.
 - Started from 8th Wall's "three.js: World Effects" example.
-- The creature models come from the author's own game project.
+- The ghost and the granny are test models made by the project's artist.

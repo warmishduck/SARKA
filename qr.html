@@ -115,14 +115,8 @@
     baseInput.value = DEFAULT_BASE
 
     // A short human description of what's at an exhibit, so staff can match a printed code to the
-    // right spot: the creatures standing there, and whether it opens straight into a game.
-    const describe = (entry) => {
-      const creatures = entry.creatures.map((c) => c.id)
-      if (creatures.length === 0 && entry.game) {
-        return 'game only'
-      }
-      return creatures.join(', ') + (entry.game ? ' + game' : '')
-    }
+    // right spot: the creatures standing there.
+    const describe = (entry) => entry.creatures.map((c) => c.id).join(', ')
 
     const urlFor = (base, code) => `${base.replace(/\/+$/, '')}/?c=${code}`
 

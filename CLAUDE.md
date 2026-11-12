@@ -59,25 +59,20 @@ src/
   debug-panel.js          On-phone readout of live values, only with ?debug in the address
   xr-pipeline.js          The shared 8th Wall camera pipeline every AR page starts with
   threejs-scene-init.js   8th Wall pipeline module: puts one exhibit into the Three.js AR scene
-  ui.js                   In-AR DOM overlay: hints, mode switch, level buttons, mute, language, photo
+  ui.js                   In-AR DOM overlay: hints, mute, language, photo
   lights.js               Lighting and shadow floor shared by the AR view and the welcome page
   showcase.js             Creatures in a scene: loading, idle motion, tap reactions (welcome + AR)
   models.js               Maps a model or art file name to its Vite asset URL
   sound.js                Synthesized sound effects (Web Audio, no audio files)
   rig.js                  Helpers for measuring and placing rigged glTF characters
   creature-snapshot.js    Renders a creature model to a 2D image, a stand-in puzzle picture
-  branch.js               Curve maths for the branch the acorn grows in the level
   glow.js                 Glowcap glow effect
   spark.js                One-shot spark burst when a puzzle is solved
   staff.js                Staff password for the ?staff=1 puzzle bypass (not real security)
-  platformer.js           Side-on platformer physics for the level (pure logic, no Three.js; tested)
-  level.js                Level diorama: scene, input and the cooperative puzzle
-  level-data.js           Level geometry data
   index.css               Page and overlay styles (the .ui-* rules)
   content/
-    exhibits.js           Exhibit registry (QR code → creatures + game + image target)
+    exhibits.js           Exhibit registry (code → creatures + image target or recognised object)
     creatures.js          Creature definitions (model, height, tap reactions, optional puzzle)
-    games.js              Mini-game registry (the platformer level an exhibit can offer)
   image-targets/
     index.js              IMAGE_TARGET_DATA — add real targets here
   minigames/
@@ -132,8 +127,6 @@ export const routeFromImageTarget = (targetName, exhibits = EXHIBITS) => { … }
 /**
  * @typedef {Object} Exhibit
  * @property {Placement[]} creatures
- * @property {string} [game] - A key of GAMES in content/games.js.
- * @property {'game'} [startIn]
  * @property {string} [imageTarget] - Name of the image target that opens this exhibit.
  */
 ```
@@ -351,11 +344,11 @@ npm test
 
 Tests live in `test/`. They run in Node (no browser, no 8th Wall).
 `config.test.js` checks i18n keys, exhibit codes, routing (incl. `?scan` and
-image-target lookup). `puzzle-logic.test.js` and `platformer.test.js` cover game logic.
+image-target lookup). `puzzle-logic.test.js` covers the puzzle rules.
 `floor-spot.test.js` covers the scanner's floor-placement maths, `marker-anchor.test.js` the marker flow's,
 `object-path.test.js` the walk round an ML-recognised object, `stencil.test.js` the stencil's shape.
 
-The `test` script in `package.json` lists the seven files by name, so a new test file
+The `test` script in `package.json` lists the six files by name, so a new test file
 is not run until it is added there.
 
 When adding a new i18n key, the test will fail until all four languages have it.

@@ -1,5 +1,5 @@
 // The jigsaw puzzle's rules, with no DOM in it, so they can be tested on their own (see
-// test/puzzle-logic.test.js) the same way src/platformer.js is. src/minigames/puzzle.js is the
+// test/puzzle-logic.test.js). src/minigames/puzzle.js is the
 // DOM/canvas layer that draws this state and turns pointer events into calls here.
 //
 // A piece is {id, homeRow, homeCol, row, col, rotation}: `home` is where it belongs, `row`/`col`

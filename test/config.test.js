@@ -6,7 +6,6 @@ import {fileURLToPath} from 'node:url'
 
 import {CREATURES} from '../src/content/creatures.js'
 import {EXHIBITS, PREVIEW} from '../src/content/exhibits.js'
-import {GAMES} from '../src/content/games.js'
 import {DEFAULT_LANG, getLang, LANG_LABELS, LANGS, STRINGS} from '../src/i18n.js'
 import {resolveRoute, routeFromImageTarget} from '../src/route.js'
 
@@ -22,14 +21,8 @@ const placements = [...Object.entries(EXHIBITS).flatMap(([code, e]) => e.creatur
   check('every placed creature exists in CREATURES', bad.length === 0, bad.map(([code, p]) => `${code}:${p.id}`).join(', ')) }
 { const bad = placements.filter(([, p]) => !Number.isFinite(p.x) || !Number.isFinite(p.z))
   check('every placement has a position', bad.length === 0, bad.map(([code, p]) => `${code}:${p.id}`).join(', ')) }
-{ const bad = Object.entries(EXHIBITS).filter(([, e]) => e.game !== undefined && !Object.hasOwn(GAMES, e.game))
-  check('every exhibit game is a known game', bad.length === 0, bad.map(([code]) => code).join(', ')) }
-{ const bad = Object.values(GAMES).filter((g) => !g.type || !g.data)
-  check('every game has a type and level data', bad.length === 0) }
-{ const bad = Object.entries(EXHIBITS).filter(([, e]) => e.startIn === 'game' && !e.game)
-  check('an exhibit that starts in the game has one', bad.length === 0, bad.map(([code]) => code).join(', ')) }
-{ const bad = Object.entries(EXHIBITS).filter(([, e]) => e.creatures.length === 0 && !e.game)
-  check('no exhibit is empty (needs a creature or a game)', bad.length === 0, bad.map(([code]) => code).join(', ')) }
+{ const bad = Object.entries(EXHIBITS).filter(([, e]) => e.creatures.length === 0)
+  check('no exhibit is empty (needs a creature)', bad.length === 0, bad.map(([code]) => code).join(', ')) }
 { const bad = Object.keys(EXHIBITS).filter((code) => !/^[a-z0-9][a-z0-9-]{0,31}$/.test(code))
   check('every exhibit code is lower case letters, digits and dashes', bad.length === 0, bad.join(', ')) }
 

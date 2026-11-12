@@ -6,9 +6,6 @@
 //   creatures  who stands there: [{id: 'ghost', x, z, yaw, ...}]. `id` is a key of CREATURES;
 //              x/z are where it stands on the floor in front of the phone (default 0 / -0.2);
 //              any other field overrides that creature's own setting for this exhibit
-//   game       the id of the mini-game to offer (or start in), if any — a key of GAMES in
-//              content/games.js, which is where the id turns into what actually plays
-//   startIn    'game' opens straight into the game, with no creature showcase first
 // Codes are lower case letters, digits and dashes.
 //
 // NOTE: the exhibits here are test setups for the office, with the two creatures that exist so far
@@ -26,8 +23,6 @@ import {CREATURES} from './creatures.js'
 /**
  * @typedef {Object} Exhibit
  * @property {Placement[]} creatures
- * @property {string} [game] - A key of GAMES in content/games.js.
- * @property {'game'} [startIn]
  * @property {string} [imageTarget] - Name of the image target for the exhibit's description poster.
  *   When `objectTarget` is also set, scanning this poster shows a "Find the exhibit object" hint;
  *   otherwise the poster IS the trigger that places the creature (single-target flow).

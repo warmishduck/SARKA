@@ -23,7 +23,7 @@ const PARTICLE_COUNT = 18
 const DURATION = 0.7
 
 // Adds a burst of particles to `group` as children, so it sits in whatever coordinate space the
-// group is already in (world space for the AR showcase, the level's scaled stage, ...). `radius`
+// group is already in (world space for the AR showcase, a scaled stage, ...). `radius`
 // is roughly how far the sparks travel, in that same space — pass something proportional to the
 // creature's own height. Returns {update(dt)}: call it every frame; once the burst has finished
 // it removes its own particles and update() stops doing anything.
