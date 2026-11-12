@@ -34,8 +34,8 @@ export const STRINGS = {
     rotateRight: 'Rotate right',
     rotateLeft: 'Rotate left',
     language: 'Language',
-    title: 'Forest Creatures · AR',
-    welcomeTitle: 'Forest Creatures',
+    title: 'Sarka AR',
+    welcomeTitle: 'Sarka AR',
     welcomeBody: 'Scan the QR code next to an exhibit to meet its creature',
     welcomeUnknown: 'This code was not recognised. Try scanning it again.',
     scanObjects: 'Scan an object',
@@ -79,8 +79,8 @@ export const STRINGS = {
     rotateRight: 'Käännä oikealle',
     rotateLeft: 'Käännä vasemmalle',
     language: 'Kieli',
-    title: 'Metsän olennot · AR',
-    welcomeTitle: 'Metsän olennot',
+    title: 'Sarka AR',
+    welcomeTitle: 'Sarka AR',
     welcomeBody: 'Skannaa näyttelyesineen vieressä oleva QR-koodi tavataksesi sen olennon',
     welcomeUnknown: 'Koodia ei tunnistettu. Yritä skannata se uudelleen.',
     scanObjects: 'Skannaa esine',
@@ -124,8 +124,8 @@ export const STRINGS = {
     rotateRight: 'Vrid åt höger',
     rotateLeft: 'Vrid åt vänster',
     language: 'Språk',
-    title: 'Skogens varelser · AR',
-    welcomeTitle: 'Skogens varelser',
+    title: 'Sarka AR',
+    welcomeTitle: 'Sarka AR',
     welcomeBody: 'Skanna QR-koden bredvid ett utställningsföremål för att möta dess varelse',
     welcomeUnknown: 'Koden kändes inte igen. Försök skanna den igen.',
     scanObjects: 'Skanna ett föremål',
@@ -143,60 +143,15 @@ export const STRINGS = {
     scanFloorFirst: 'Rikta kameran kort mot golvet, lyft sedan mot föremålet',
     puzzleSkip: 'Hoppa över pusslet',
   },
-  uk: {
-    loading: (done, total) => `Завантажую істот… ${done}/${total}`,
-    loadingLevel: 'Завантажую рівень…',
-    hintCreatures: 'Торкнись істоти — вона зреагує',
-    hintWall: 'Хтось ховається за стіною — торкнись її',
-    hintFloor: 'Подивись на підлогу — істота приземлиться там',
-    hintLevel: 'Торкнись землі — Glowcap піде туди. Його світло будує міст',
-    modeToLevel: '🎮 Рівень',
-    modeToCreatures: '🌰 Істоти',
-    actionGrow: '🌿 Виростити гілку',
-    actionRemove: '🍂 Прибрати гілку',
-    won: 'Glowcap дійшов до виходу! ✨',
-    branchLost: 'Гілка зникла: жолудь відійшов надто далеко',
-    left: 'Вліво',
-    right: 'Вправо',
-    jump: 'Стрибок',
-    mute: 'Вимкнути звук',
-    unmute: 'Увімкнути звук',
-    photo: 'Зробити фото',
-    share: 'Поділитися',
-    close: 'Закрити',
-    saveHelp: 'Затисни фото, щоб зберегти його',
-    photoFailed: 'Не вдалося зробити фото',
-    rotateRight: 'Повернути вправо',
-    rotateLeft: 'Повернути вліво',
-    language: 'Мова',
-    title: 'Лісові істоти · AR',
-    welcomeTitle: 'Лісові істоти',
-    welcomeBody: 'Відскануй QR-код біля експоната, щоб зустріти його істоту',
-    welcomeUnknown: 'Цей код не розпізнано. Спробуй відсканувати його ще раз.',
-    scanObjects: 'Навести на предмет',
-    scanHint: 'Наведи камеру на предмет у залі',
-    scanFloor: 'Знайдено! Тепер наведи камеру на підлогу перед собою',
-    scanMove: 'Зачекай, камера орієнтується. Повільно поводь телефоном з боку в бік',
-    scanMarker: 'Знайдено! Тепер наведи камеру на маркер на підлозі',
-    scanFindObject: 'Знайдено! Тепер знайди предмет і наведи на нього камеру',
-    scanTapObject: 'Тепер торкнися на екрані місця, де предмет стоїть на підлозі',
-    scanHoldObject: 'Добре. Тримай предмет у кадрі, поки він розпізнається',
-    scanFitObject: 'Знайдено! Тепер вмісти предмет у рамку',
-    scanFitObjectStart: 'Вмісти предмет у рамку',
-    scanHoldSteady: 'Тримай нерухомо…',
-    scanCentreObject: 'Зсунься трохи, щоб предмет був посередині рамки',
-    scanFloorFirst: 'Наведи камеру на підлогу на секунду, потім підніми до предмета',
-    puzzleSkip: 'Пропустити пазл',
-  },
 }
 
-// The museum's languages (Finnish, English, Swedish) and Ukrainian, in the order the picker lists
+// The museum's languages (Finnish, English, Swedish), in the order the picker lists
 // them. LANG_LABELS is the two-letter badge on the corner button; LANG_NAMES is each language's
 // own name, shown in the picker menu (so a Finnish visitor sees "Suomi", not a foreign word for
 // their language).
-export const LANGS = ['fi', 'en', 'sv', 'uk']
-export const LANG_LABELS = {fi: 'FI', en: 'EN', sv: 'SV', uk: 'UA'}
-export const LANG_NAMES = {fi: 'Suomi', en: 'English', sv: 'Svenska', uk: 'Українська'}
+export const LANGS = ['fi', 'en', 'sv']
+export const LANG_LABELS = {fi: 'FI', en: 'EN', sv: 'SV'}
+export const LANG_NAMES = {fi: 'Suomi', en: 'English', sv: 'Svenska'}
 export const DEFAULT_LANG = 'fi'
 
 // localStorage is shared by every site on the same host (all of someone.github.io), and the live

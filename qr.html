@@ -97,8 +97,7 @@
     <p class="hint">
       One code per exhibit. A visitor scans it to open that exhibit (<code>&lt;base&gt;/?c=&lt;code&gt;</code>).
       Change the base URL above if the site ever moves to a different domain, then reprint — a printed code points
-      at whatever URL it was made with, forever. <code>demo</code> / <code>yard</code> are the internal showcase and
-      the outdoor game, not an exhibit — skip them when printing for the exhibits.
+      at whatever URL it was made with, forever.
     </p>
   </div>
   <div class="grid" id="grid"></div>
@@ -109,7 +108,7 @@
 
     // Where the printed codes will point. The project's live home; editable for a future domain.
     const DEFAULT_BASE = 'https://warmishduck.github.io/pulse-duck-ar'
-    const SPECIAL = new Set(['demo', 'yard'])
+    const SPECIAL = new Set()
 
     const baseInput = document.getElementById('base')
     const grid = document.getElementById('grid')

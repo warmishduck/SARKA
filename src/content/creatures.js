@@ -33,35 +33,10 @@
 // A placement in an exhibit can override any of these for that one exhibit.
 
 export const CREATURES = {
-  acorn: {
-    file: 'Acorn.glb', targetHeight: 0.85, phase: 0, yaw: 0.3, hover: 0, bob: 0, hop: false,
-    reactions: [
-      {clip: 'Jump', sound: 'boing'},
-      {clip: 'Ouch', sound: 'squeak'},
-      {clip: 'PickUp', sound: 'plink'},
-      {clip: 'PickThrow', sound: 'whoosh'},
-      {clip: 'Run', repeat: 3, sound: 'patter'},
-    ],
-    // `Jump` stands in for a proper wake animation until one exists.
-    puzzle: {pieces: 6, rows: 3, cols: 2, snapRatio: 0.15, hintMs: 15000, art: 'Acorn-art.webp', label: 'Acorn'},
-    unlockAnim: 'Jump',
-    walkAnim: 'Run',
-  },
-  pinecone: {
-    file: 'Pinecone.glb', targetHeight: 0.8, phase: Math.PI / 2, spinSpeed: -0.6, hopSound: 'pop',
-    puzzle: {pieces: 6, rows: 3, cols: 2, snapRatio: 0.15, hintMs: 15000, art: 'Pinecone-art.png', label: 'Pinecone'},
-    // No unlockAnim: the model has no clip of its own, just the idle bob/pulse. It still
-    // unlocks fine — a spark and its wake sound, then a short hold before going idle.
-  },
-  glowcap: {
-    file: 'Glowcap.glb', targetHeight: 0.55, phase: Math.PI, spinSpeed: -0.5, hop: false, glow: true,
-    puzzle: {pieces: 6, rows: 3, cols: 2, snapRatio: 0.15, hintMs: 15000, art: 'Glowcap-art.png', label: 'Glowcap'},
-  },
-  // Test model from the artist (no clips, no rig): floats and bobs like the others.
-  // The eyes on its sheet look the model's -z way (its back), so it is turned round to face the visitor.
-  // Its clips are baked cloth (shape keys): Idle sways, Fly streams back while it moves out.
   // Test model from the artist, rigged by Mixamo (65 bones) with its Thriller Idle clip, named Idle.
   // It faces +z (the Mixamo rig's front), so no yaw; its height is measured from the posed vertices.
   granny: {file: 'Granny.glb', targetHeight: 0.5, phase: 0, hover: 0, bob: 0, hop: false},
+  // Test model from the artist. The eyes on its sheet look the model's -z way (its back), so it is turned
+  // round to face the visitor. Its clips are baked cloth (shape keys): Idle sways, Fly streams back while it moves out.
   ghost: {file: 'AnotherGhost.glb', targetHeight: 0.5, phase: 0, yaw: Math.PI, hop: false, walkAnim: 'Fly'},
 }

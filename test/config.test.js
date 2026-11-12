@@ -40,22 +40,22 @@ const placements = [...Object.entries(EXHIBITS).flatMap(([code, e]) => e.creatur
 { const bad = LANGS.flatMap((lang) => Object.entries(STRINGS[lang]).filter(([key, value]) => typeof value !== typeof STRINGS[LANGS[0]][key] || value === '').map(([key]) => `${lang}.${key}`))
   check('no text is empty or of another kind (text vs function) than in the first language', bad.length === 0, bad.join(', ')) }
 check('the switch knows every language it can show', LANGS.every((lang) => STRINGS[lang] && LANG_LABELS[lang]) && Object.keys(STRINGS).length === LANGS.length)
-check('the languages are Finnish, English, Swedish and Ukrainian, in that order', LANGS.join(',') === 'fi,en,sv,uk')
+check('the languages are Finnish, English and Swedish, in that order', LANGS.join(',') === 'fi,en,sv')
 check('with nothing picked yet, the page starts in Finnish', DEFAULT_LANG === 'fi' && getLang() === 'fi')
 
 // ---------------------------------------------------------------- picking an exhibit from the address
 const route = (search) => resolveRoute(search)
-check('/?c=03 opens exhibit 03', route('?c=03').kind === 'exhibit' && route('?c=03').code === '03' && route('?c=03').exhibit === EXHIBITS['03'])
-check('/?c=yard opens the yard game', route('?c=yard').exhibit === EXHIBITS.yard)
-check('codes are not case sensitive, and spaces around them are ignored', route('?c=YARD').code === 'yard' && route('?c=%2003%20').code === '03')
-check('other parameters do not matter', route('?utm_source=poster&c=02&x=1').code === '02')
+check('/?c=test-panel opens exhibit test-panel', route('?c=test-panel').kind === 'exhibit' && route('?c=test-panel').code === 'test-panel' && route('?c=test-panel').exhibit === EXHIBITS['test-panel'])
+check('/?c=office-painting opens the office painting', route('?c=office-painting').exhibit === EXHIBITS['office-painting'])
+check('codes are not case sensitive, and spaces around them are ignored', route('?c=OFFICE-PAINTING').code === 'office-painting' && route('?c=%20test-panel%20').code === 'test-panel')
+check('other parameters do not matter', route('?utm_source=poster&c=test-granny&x=1').code === 'test-granny')
 check('no code: the welcome page', route('').kind === 'welcome' && route('').unknownCode === false && route('?c=').unknownCode === false)
 check('an unknown code: the welcome page, saying so', route('?c=zz').kind === 'welcome' && route('?c=zz').unknownCode === true)
 check('junk codes never open anything', ['../x', 'a b', '<script>', 'x'.repeat(200), '-1', '%00'].every((c) => route(`?c=${encodeURIComponent(c)}`).kind === 'welcome'))
 check('prototype names are not exhibits', ['constructor', 'toString', '__proto__', 'hasOwnProperty'].every((c) => route(`?c=${c}`).kind === 'welcome'))
 check('a custom exhibit list is used when given', resolveRoute('?c=a', {a: {creatures: []}}).kind === 'exhibit')
 check('/?scan opens the object scanner', route('?scan').kind === 'scan' && route('?scan=1').kind === 'scan')
-check('an exhibit code wins over scan', route('?scan&c=03').kind === 'exhibit')
+check('an exhibit code wins over scan', route('?scan&c=test-panel').kind === 'exhibit')
 
 // ---------------------------------------------------------------- picking an exhibit from a recognised object
 check('a known image target opens its exhibit', routeFromImageTarget('abstract-painting')?.code === 'office-painting')

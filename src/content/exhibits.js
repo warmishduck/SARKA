@@ -1,9 +1,9 @@
-// The exhibits: one entry per QR code. The code in the address (`/?c=03`) picks the entry, so
+// The exhibits: one entry per QR code. The code in the address (`/?c=test-panel`) picks the entry, so
 // what stands at an exhibit can be changed here without printing a new code. Plain data, like
 // creatures.js.
 //
 // An entry has:
-//   creatures  who stands there: [{id: 'acorn', x, z, yaw, ...}]. `id` is a key of CREATURES;
+//   creatures  who stands there: [{id: 'ghost', x, z, yaw, ...}]. `id` is a key of CREATURES;
 //              x/z are where it stands on the floor in front of the phone (default 0 / -0.2);
 //              any other field overrides that creature's own setting for this exhibit
 //   game       the id of the mini-game to offer (or start in), if any — a key of GAMES in
@@ -11,8 +11,8 @@
 //   startIn    'game' opens straight into the game, with no creature showcase first
 // Codes are lower case letters, digits and dashes.
 //
-// NOTE: 01-03, demo and yard are stand-ins to try the flow with the three creatures that exist
-// so far. They get replaced by the museum's real exhibits and creatures.
+// NOTE: the exhibits here are test setups for the office, with the two creatures that exist so far
+// (the ghost and the granny). They get replaced by the museum's real exhibits and creatures.
 
 import {CREATURES} from './creatures.js'
 
@@ -74,32 +74,16 @@ const at = (id, x = 0, z = -0.2, extra = {}) => ({id, x, z, ...extra})
 // others next to it for scale it read as small and far away.
 const alone = (id, extra = {}) => at(id, 0, -0.2, {targetHeight: CREATURES[id].targetHeight * 3, ...extra})
 
-// The three creatures standing together, as the demo page has always shown them.
-const TOGETHER = [
-  {id: 'acorn', x: -0.45, z: -0.85},
-  {id: 'pinecone', x: 0.45, z: -0.85},
-  {id: 'glowcap', x: 0, z: 0.5},
-]
-
 export const EXHIBITS = {
-  // imageTarget matches the name given when running image-target-cli on that exhibit's photo.
-  '01': {creatures: [alone('acorn')], imageTarget: '01'},
-  '02': {creatures: [alone('pinecone')], imageTarget: '02'},
-  '03': {creatures: [alone('glowcap')], game: 'light_the_way', imageTarget: '03'},
-  // Office test objects: an abstract painting, a cats painting and a wooden wall clock.
+  // Office test objects: an abstract painting and a cats painting. imageTarget matches the name given
+  // when running image-target-cli on that object's photo.
   'office-painting': {creatures: [alone('ghost')], imageTarget: 'abstract-painting'},
   'office-cats': {creatures: [alone('ghost')], imageTarget: 'cats-painting'},
-  'office-clock': {creatures: [alone('acorn')], imageTarget: 'wood-clock'},
   // ML recognition test: cats painting → ML model detects the physical object from any angle.
   // The cats painting is 50 x 40 cm; its image target crop is about 48 x 36 cm.
   'test-purifier': {
     creatures: [at('ghost', 0, 0, {...GROUNDED, targetHeight: 1.6})], imageTarget: 'cats-painting', mlTarget: 'air-purifier',
     objectSize: {radius: 0.13, height: 0.49}, posterWidth: 0.36,
-  },
-  // objectSize is a guess; measure the real station.
-  'test-vacuum': {
-    creatures: [at('glowcap', 0, 0, GROUNDED)], imageTarget: 'cats-painting', mlTarget: 'vacuum-station',
-    objectSize: {radius: 0.17, height: 0.4}, posterWidth: 0.36,
   },
   // The granny (a Mixamo-rigged test model), on the cats painting like the ghost: /?scan&c=test-granny
   'test-granny': {creatures: [alone('granny', GROUNDED)], imageTarget: 'cats-painting'},
@@ -109,12 +93,11 @@ export const EXHIBITS = {
   // /?scan&c=test-panel-granny. They do not fit side by side behind the 36 cm box (the ghost alone is 24 cm wide).
   'test-panel': {creatures: [at('ghost', 0, 0, {...GROUNDED, targetHeight: 1.0})], ...PANEL},
   'test-panel-granny': {creatures: [at('granny', 0, 0, {...GROUNDED, targetHeight: 1.0})], ...PANEL},
-  // The whole demo: all the creatures, and the game a button away.
-  demo: {creatures: TOGETHER, game: 'light_the_way'},
-  // The yard game, open whenever the museum is closed: no creatures, straight into the game.
-  yard: {creatures: [], game: 'light_the_way', startIn: 'game'},
 }
 
 // What the welcome page shows (the page you get without a code): a preview of the creatures
-// waiting inside, all standing together.
-export const PREVIEW = TOGETHER
+// waiting inside, standing together.
+export const PREVIEW = [
+  {id: 'ghost', x: -0.45, z: -0.3, targetHeight: 0.85},
+  {id: 'granny', x: 0.45, z: -0.3, targetHeight: 0.85},
+]
