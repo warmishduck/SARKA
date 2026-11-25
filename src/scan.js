@@ -20,6 +20,11 @@
 // object into; once it sees it there, the object stands where the stencil's bottom edge meets the
 // floor, and the creature walks out from behind it and round it (object-path.js). Tapping where the
 // object stands is the fallback. Sizes are in metres, turned into scene units by the poster's width.
+//
+// An exhibit with a `quest` (`/?scan&c=test-quest`) goes through the scanner more than once in the
+// same session: its creature is placed like any other and asks for an item; a button sends the
+// visitor to the other object (the ML flow, without a poster), where the item appears to be tapped;
+// then its own object is looked for again and the same creature stands there anew (quest.js).
 
 import * as THREE from 'three'
 
@@ -34,6 +39,10 @@ import {
 import {dropToFloor, fitCylinderCentre, sitOnWallBox, walkAroundObject} from './object-path'
 import {boxStencilShape, createStencil, footDistanceAt, stencilShape} from './stencil'
 import {createDebugPanel} from './debug-panel'
+import {createQuest} from './quest'
+import {createQuestUi} from './quest-ui'
+import {createSock} from './sock'
+import {playSound, resumeAudio} from './sound'
 import {initScenePipelineModule, placeCameraAtStart} from './threejs-scene-init'
 import {createSparkBurst} from './spark'
 import {startXr} from './xr-pipeline'
@@ -117,6 +126,13 @@ const GLOW_SIZE = 1.8          // the halo's diameter, in multiples of the objec
 const GLOW_PULSE_SPEED = 4     // radians per second
 const GLOW_FADE_SPEED = 2      // opacity per second when it goes away
 const MIN_GLOW_SECONDS = 1.2   // the glow shows at least this long, even if already looking down
+
+// AUKI: guesses for the home test, not tried on the phone: the quest's item, in metres.
+const ITEM_HEIGHT = 0.3          // how tall the sock is drawn (bigger than a real one, to be seen and tapped)
+const ITEM_HOVER = 0.08          // how high it floats above the floor
+const ITEM_TOWARD_VIEWER = 0.25  // how far in front of the object's near face it appears
+const ITEM_SPIN = 1.2            // radians per second, so it catches the eye
+const GIVEN_ITEM_SIDE = 0.4      // where the given sock stands beside the creature, in creature heights
 
 const FLOOR_SAMPLE_SECONDS = 0.1   // between two readings of the floor's height
 const FLOOR_SAMPLES_NEEDED = 5     // readings before the floor counts as measured
@@ -258,6 +274,13 @@ const scanPipelineModule = () => {
   if (preloadedCode && Object.hasOwn(EXHIBITS, preloadedCode)) {
     exhibit = EXHIBITS[preloadedCode]
   }
+  const questExhibit = exhibit?.quest ? exhibit : null
+  const quest = questExhibit ? createQuest() : null
+  let questUi = null
+  let questCreature = null      // the quest creature's scene module, kept while it is hidden
+  let questAnchor = null        // where it stands now
+  let item = null               // the sock: {root, hitTarget, baseY}
+  let thanks = null             // the sparks when the creature gets it
   let wall = null              // marker flow: the exhibit object's wall plane (marker-anchor.js)
   let markerAt = null          // marker flow: where the floor marker is, a THREE.Vector3
   let markerWidth = 0          // marker flow: its width in world units (detail.scale)
@@ -282,7 +305,7 @@ const scanPipelineModule = () => {
   // exhibit is known, so it is ready by the time the visitor gets to the object.
   const loadMlModel = () => {
     debug?.set('ml', 'loading model…')
-    return loadModel(exhibit?.modelUrl ?? OBJECT_MODEL_URL).then(({backend, ms}) => {
+    return loadModel((questExhibit?.quest.find ?? exhibit)?.modelUrl ?? OBJECT_MODEL_URL).then(({backend, ms}) => {
       debug?.set('ml', `model ready: ${backend}, ${(ms / 1000).toFixed(1)} s`)
     })
   }
@@ -308,7 +331,7 @@ const scanPipelineModule = () => {
       : stencilShape({...DEFAULT_OBJECT_SIZE, ...exhibit.objectSize}, camera.projectionMatrix.elements, view)
     stencil = createStencil(shape, view)
     // Without a poster first there is nothing to have "found" yet.
-    const fitHint = exhibit.imageTarget ? TEXT.scanFitObject : TEXT.scanFitObjectStart
+    const fitHint = exhibit.fitHint ? TEXT[exhibit.fitHint] : exhibit.imageTarget ? TEXT.scanFitObject : TEXT.scanFitObjectStart
     hint.setText(fitHint)
     debug?.set('stencil', `drawn for ${shape.distance.toFixed(1)} m, foot at y=${shape.footY.toFixed(0)} px`)
     const centre = onWall ? null : centreSquare(shape)
@@ -580,6 +603,14 @@ const scanPipelineModule = () => {
    * A tap before the object is recognised is kept for when it is, so it is not lost.
    */
   const onObjectTap = (event) => {
+    if (quest?.step === 'itemThere') {
+      resumeAudio()
+      tapRaycaster.ray.copy(screenRay(event.clientX, event.clientY))
+      if (tapRaycaster.intersectObject(item.hitTarget).length > 0) {
+        takeItem()
+      }
+      return
+    }
     if (exhibit?.mount === 'wall') {
       return
     }
@@ -648,7 +679,7 @@ const scanPipelineModule = () => {
     }
 
     // Poster (first target) found: identify the exhibit and set the next instruction.
-    if (state === 'searching') {
+    if (state === 'searching' && !(quest && detail.name !== exhibit.imageTarget)) {
       // If an exhibit was pre-loaded via ?scan&c=<code>, use it when its imageTarget matches;
       // otherwise fall back to the first exhibit whose imageTarget matches the detected target.
       const preloaded = exhibit && exhibit.imageTarget === detail.name
@@ -871,6 +902,10 @@ const scanPipelineModule = () => {
       placeOnWallBox()
       return
     }
+    if (quest?.step === 'looking') {
+      placeItem(camera)
+      return
+    }
     if (exhibit.mlTarget) {
       placeAroundObject(camera)
       return
@@ -947,19 +982,149 @@ const scanPipelineModule = () => {
     debug?.set('anchor scale', anchor.scale)
     glow.hide()
     hint.remove()
+    if (quest) {
+      questAnchor = {position: anchor.position.clone(), yaw: anchor.yaw, scale: anchor.scale}
+    }
+    if (questCreature) {
+      // Back at the quest creature: the same one, standing where its object is seen now.
+      questCreature.jumpTo({...questAnchor, position: anchor.position.clone()})
+      questCreature.setShown(true)
+      exhibitModule = questCreature
+      onQuestCreatureShown()
+      return
+    }
     // Setting the scene up renders (the lights' environment map) in the middle of an 8th Wall
     // frame, so three's cached WebGL state is resynced before and after.
     const {renderer} = XR8.Threejs.xrScene()
     renderer.resetState()
     try {
-      exhibitModule = initScenePipelineModule(exhibit, {anchor, ...options})
+      exhibitModule = initScenePipelineModule(exhibit, {anchor: {...anchor}, creatureHint: !quest, ...options})
       exhibitModule.onStart({canvas})
+      if (quest) {
+        questCreature = exhibitModule
+        onQuestCreatureShown()
+      }
     } catch (error) {
       debug?.set('place error', error?.stack || error)
       throw error
     } finally {
       renderer.resetState()
     }
+  }
+
+  /** The quest creature has just been placed: it asks for the item, or waits to be given it. */
+  const onQuestCreatureShown = () => {
+    if (!quest.send('creatureShown')) {
+      return
+    }
+    debug?.set('quest', quest.step)
+    if (quest.step === 'asked') {
+      questUi.showHint('questAsk')
+      questUi.showButton('questSearch', startItemSearch)
+    } else {
+      questUi.showHint(null)
+      questUi.showButton('questGive', giveItem)
+    }
+  }
+
+  /** A new glow and hint, and everything read off the last object forgotten, for the next one. */
+  const lookAfresh = (nextExhibit) => {
+    exhibit = nextExhibit
+    foundName = null
+    foundSeconds = 0
+    objectFoundSeconds = 0
+    pendingTap = null
+    stencilUnitsPerMetre = 0
+    glow = createObjectGlow(XR8.Threejs.xrScene().scene)
+    hint = createHint('')
+  }
+
+  /** The button under the creature: leave it, and find the object the item is at. */
+  const startItemSearch = () => {
+    if (!quest.send('search')) {
+      return
+    }
+    resumeAudio()
+    debug?.set('quest', quest.step)
+    questUi.showHint(null)
+    questUi.showButton(null)
+    questCreature.setShown(false)
+    lookAfresh({creatures: [], fitHint: 'questFitFind', ...questExhibit.quest.find})
+    state = 'found'
+    hint.setText(TEXT.questFitFind)
+    startMlDetection()
+  }
+
+  /** The other object has been recognised: the sock floats just in front of it. */
+  const placeItem = (camera) => {
+    if (!quest.send('itemShown')) {
+      return
+    }
+    debug?.set('quest', quest.step)
+    const upm = unitsPerMetre()
+    const toCamera = new THREE.Vector3(camera.position.x - objectPosition.x, 0, camera.position.z - objectPosition.z)
+    if (toCamera.lengthSq() > 1e-8) {
+      toCamera.normalize()
+    } else {
+      toCamera.set(0, 0, 1)
+    }
+    item = createSock()
+    item.root.scale.setScalar(ITEM_HEIGHT * upm)
+    item.root.position.copy(objectPosition).addScaledVector(toCamera, ITEM_TOWARD_VIEWER * upm)
+    item.baseY = objectPosition.y + ITEM_HOVER * upm
+    item.root.position.y = item.baseY
+    XR8.Threejs.xrScene().scene.add(item.root)
+    debug?.set('item', item.root.position)
+    state = 'item'
+    debug?.set('state', state)
+    glow.hide()
+    hint.remove()
+    playSound('plink')
+    questUi.showHint('questTapItem')
+  }
+
+  /** The sock was tapped: it goes with the visitor, who now looks for the creature again. */
+  const takeItem = () => {
+    if (!quest.send('itemTaken')) {
+      return
+    }
+    debug?.set('quest', quest.step)
+    XR8.Threejs.xrScene().scene.remove(item.root)
+    playSound('pop')
+    questUi.showBadge('questCarrying')
+    questUi.showHint(null)
+    lookAfresh(questExhibit)
+    hint.setText(TEXT.questReturn)
+    state = 'searching'
+    debug?.set('state', state)
+  }
+
+  /** The button under the returned creature: the sock goes to it, and it is glad. */
+  const giveItem = () => {
+    if (!quest.send('give')) {
+      return
+    }
+    resumeAudio()
+    debug?.set('quest', quest.step)
+    questUi.showButton(null)
+    questUi.showBadge(null)
+    questUi.showHint('questThanks')
+    const {scene} = XR8.Threejs.xrScene()
+    const {position, yaw, scale} = questAnchor
+    const height = tallestCreature(questExhibit) * scale
+    // Beside the creature, to the visitor's right when it faces them.
+    const side = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw))
+    item.root.scale.setScalar(height * 0.35)
+    item.root.position.copy(position).addScaledVector(side, height * GIVEN_ITEM_SIDE)
+    item.baseY = position.y + height * 0.05
+    item.root.position.y = item.baseY
+    scene.add(item.root)
+    const burstAt = new THREE.Group()
+    burstAt.position.copy(position)
+    scene.add(burstAt)
+    thanks = createSparkBurst(burstAt, {radius: height * 0.6})
+    questCreature.react()
+    playSound('wake')
   }
 
   return {
@@ -971,6 +1136,11 @@ const scanPipelineModule = () => {
       placeCameraAtStart(camera)
       glow = createObjectGlow(scene)
       hint = createHint(TEXT.scanFloorFirst)
+      if (quest) {
+        questUi = createQuestUi()
+        debug?.set('quest', quest.step)
+        loadMlModel().catch((e) => debug?.set('ml', `model load failed: ${e.message}`))
+      }
       debug?.set('state', state)
       if (exhibit?.mlTarget) {
         loadMlModel().catch((e) => debug?.set('ml', `model load failed: ${e.message}`))
@@ -988,6 +1158,11 @@ const scanPipelineModule = () => {
     onUpdate: ({processCpuResult}) => {
       const dt = clock.getDelta()
       glow.update(dt)
+      thanks?.update(dt)
+      if (item) {
+        item.root.rotation.y += dt * ITEM_SPIN
+        item.root.position.y = item.baseY + Math.sin(clock.elapsedTime * 2.5) * item.root.scale.y * 0.08
+      }
       worldPoints = processCpuResult?.reality?.worldPoints ?? worldPoints
       if (debug) {
         fpsFrames++
@@ -1025,7 +1200,9 @@ const scanPipelineModule = () => {
         if (forward.y < FLOOR_PITCH) {
           measureFloor(camera.position.y, dt)
         }
-        if (floorSamples.length < FLOOR_SAMPLES_NEEDED) {
+        if (quest?.step === 'carrying') {
+          hint.setText(TEXT.questReturn)
+        } else if (floorSamples.length < FLOOR_SAMPLES_NEEDED) {
           hint.setText(TEXT.scanFloorFirst)
         } else {
           hint.setText(TEXT.scanHint)

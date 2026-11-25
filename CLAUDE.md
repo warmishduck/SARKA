@@ -51,6 +51,9 @@ src/
   marker-anchor.js        Pure maths for /?scan&marker: wall plane, marker position, walk-out start (tested)
   object-path.js          Pure maths for ML exhibits: the walk round a free-standing object, the seat on top of a box on a wall (tested)
   stencil.js              ML exhibits: the outline the visitor fits the object into, a cylinder on the floor or a box on a wall (shape maths tested), and its SVG overlay
+  quest.js                The steps of the scanner's fetch quest (pure, tested)
+  quest-ui.js             The quest's hint, button and "carrying" note (DOM)
+  sock.js                 Stand-in sock model for the quest, built from shapes
   ml/
     model-config.js       URL of the Teachable Machine model
     object-detector.js    Cuts camera frames and hands them to the worker; loadModel / startDetection
@@ -346,9 +349,10 @@ Tests live in `test/`. They run in Node (no browser, no 8th Wall).
 `config.test.js` checks i18n keys, exhibit codes, routing (incl. `?scan` and
 image-target lookup). `puzzle-logic.test.js` covers the puzzle rules.
 `floor-spot.test.js` covers the scanner's floor-placement maths, `marker-anchor.test.js` the marker flow's,
-`object-path.test.js` the walk round an ML-recognised object, `stencil.test.js` the stencil's shape.
+`object-path.test.js` the walk round an ML-recognised object, `stencil.test.js` the stencil's shape,
+`quest.test.js` the quest's steps.
 
-The `test` script in `package.json` lists the six files by name, so a new test file
+The `test` script in `package.json` lists the seven files by name, so a new test file
 is not run until it is added there.
 
 When adding a new i18n key, the test will fail until all four languages have it.

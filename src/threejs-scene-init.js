@@ -49,10 +49,13 @@ export const placeCameraAtStart = (camera) => {
  *   content here (or at the first of these waypoints, then through the rest) and walk it to the
  *   anchor at EMERGE_SPEED, facing the way it walks, so it comes out from behind something
  *   invisible (a wall, or the object it walks round). At the anchor it turns to `anchor.yaw`.
- * @returns {Object} An 8th Wall camera pipeline module, plus `moveAnchor(position)`: the anchor
- *   follows a marker that is tracked again (the content eases to the new spot).
+ * @param {boolean} [options.creatureHint] - False: no "tap a creature" hint (the quest shows its own).
+ * @returns {Object} An 8th Wall camera pipeline module, plus, for anchored content:
+ *   `moveAnchor(position)` (the anchor follows a marker that is tracked again; the content eases
+ *   to the new spot), `setShown(on)`, `jumpTo(anchor)` (stand somewhere else at once) and
+ *   `react()` (the first creature does what a tap on it does).
  */
-export const initScenePipelineModule = (exhibit, {anchor = null, puzzlesEnabled = true, emergeFrom = null} = {}) => {
+export const initScenePipelineModule = (exhibit, {anchor = null, puzzlesEnabled = true, emergeFrom = null, creatureHint = true} = {}) => {
   const clock = new THREE.Clock()
 
   // Placed by the scanner, a creature still behind its puzzle hides behind a stone wall instead of
@@ -106,6 +109,9 @@ export const initScenePipelineModule = (exhibit, {anchor = null, puzzlesEnabled 
 
   // Shows a hint until the person acts on it (or a while passes).
   const showHint = () => {
+    if (!creatureHint) {
+      return
+    }
     ui.showHint()
     clearTimeout(hintTimer)
     hintTimer = setTimeout(() => ui.hideHint(), hintSeconds * 1000)
@@ -254,6 +260,9 @@ export const initScenePipelineModule = (exhibit, {anchor = null, puzzlesEnabled 
           if (e.touches.length !== 1) {
             return
           }
+          if (stage && !stage.visible) {
+            return   // raycasting ignores `visible`: hidden creatures must not answer taps
+          }
           aimRaycaster(e.touches[0], canvas, camera)
           const hitIndex = showcase.hitTest(raycaster)
           if (hitIndex !== -1) {
@@ -273,6 +282,20 @@ export const initScenePipelineModule = (exhibit, {anchor = null, puzzlesEnabled 
       updateAnchor(dt)
       showcase.update(dt, t)
     },
+
+    setShown: (on) => {
+      stage.visible = on
+    },
+
+    jumpTo: (next) => {
+      anchor.yaw = next.yaw
+      anchorTarget.copy(next.position)
+      stage.position.copy(next.position)
+      stage.rotation.y = next.yaw
+      stage.scale.setScalar(next.scale)
+    },
+
+    react: () => onTap(0),
 
     moveAnchor: (position) => {
       if (anchorTarget) {

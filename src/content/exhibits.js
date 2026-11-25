@@ -21,6 +21,12 @@ import {CREATURES} from './creatures.js'
  */
 
 /**
+ * @typedef {Object} Quest
+ * @property {{mlTarget: string, objectSize: {radius: number, height: number}, modelUrl?: string}} find -
+ *   The free-standing object the item is found at, recognised like an `mlTarget` exhibit.
+ */
+
+/**
  * @typedef {Object} Exhibit
  * @property {Placement[]} creatures
  * @property {string} [imageTarget] - Name of the image target for the exhibit's description poster.
@@ -45,6 +51,8 @@ import {CREATURES} from './creatures.js'
  *   front of it instead of sitting on its top. It must be shorter than the box, or it shows at the start.
  *   It lands below the phone's view, so the in-AR hint asks the visitor to look at the floor.
  *   An ML exhibit without imageTarget opens straight into the stencil, without a poster.
+ * @property {Quest} [quest] - A fetch quest (quest.js): the creature at `imageTarget` asks for an item,
+ *   which is found at another object and brought back.
  * @property {string} [modelUrl] - The Teachable Machine model this exhibit's mlTarget is a class of,
  *   when it is not the shared one in src/ml/model-config.js.
  */
@@ -85,6 +93,12 @@ export const EXHIBITS = {
   'test-purifier': {creatures: [at('ghost', 0, 0, {...GROUNDED, targetHeight: 1.6})], ...PURIFIER},
   // The granny round the same purifier: /?scan&c=test-purifier-granny
   'test-purifier-granny': {creatures: [at('granny', 0, 0, {...GROUNDED, targetHeight: 1.6})], ...PURIFIER},
+  // The sock quest, a home test: /?scan&c=test-quest. The ghost at the cats painting asks for its
+  // sock, which is by the air purifier. It hops when it gets it back (its other tests do not hop).
+  'test-quest': {
+    creatures: [alone('ghost', {hop: true})], imageTarget: 'cats-painting',
+    quest: {find: {mlTarget: 'air-purifier', objectSize: PURIFIER.objectSize}},
+  },
   // The granny (a Mixamo-rigged test model), on the cats painting like the ghost: /?scan&c=test-granny
   'test-granny': {creatures: [alone('granny', GROUNDED)], imageTarget: 'cats-painting'},
   // The same granny on the abstract painting, the only painting in Jussi's office: /?scan&c=test-granny-office

@@ -411,6 +411,33 @@ body.welcome-page {
   bottom: calc(env(safe-area-inset-bottom, 0px) + 116px);
 }
 
+/* The quest's extras (quest-ui.js), stacked above the camera button. */
+.ui.ui-quest {
+  z-index: 11;   /* above the exhibit view's own overlay, which is added later */
+}
+.ui-quest-badge {
+  top: calc(env(safe-area-inset-top, 0px) + 66px);
+  background: rgba(157, 255, 138, 0.92);
+  color: #10240c;
+  font-weight: 700;
+}
+.ui-quest-hint {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 180px);
+  border-radius: 18px;
+}
+.ui .ui-quest-button {
+  position: absolute;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 112px);
+  transform: translateX(-50%);
+  white-space: nowrap;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  visibility: hidden;
+}
+.ui .ui-quest-button.is-visible {
+  visibility: visible;
+}
+
 /* The stencil (stencil.js): an outline the visitor fits the exhibit object into. */
 .ui-stencil {
   position: fixed;
